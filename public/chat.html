@@ -500,13 +500,20 @@
   }
 
   function appendBotRow() {
+    const isGemini = currentModel === 'gemini';
+    const modelColor = isGemini ? '#4285f4' : '#f59e0b';
+    const modelLabel = isGemini ? 'Gemini Flash' : 'Claude Sonnet';
     const row = document.createElement('div');
     row.className = 'msg-row bot';
     row.innerHTML = `
       <div class="msg-inner">
         <div class="msg-header">
-          <div class="msg-avatar bot">B</div>
+          <div class="msg-avatar bot" style="background:linear-gradient(135deg,${modelColor}99,${modelColor})">B</div>
           <div class="msg-name">BagsMCP</div>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:${modelColor}18;border:1px solid ${modelColor}40;border-radius:100px;padding:1px 8px;font-size:10.5px;font-weight:600;color:${modelColor}">
+            <span style="width:5px;height:5px;border-radius:50%;background:${modelColor};display:inline-block"></span>
+            ${modelLabel}
+          </span>
           <div class="msg-time">${timeStr()}</div>
           <div class="msg-actions">
             <button class="action-btn copy-btn">
