@@ -407,8 +407,8 @@
       </div>
       <div class="config-card">
         <div class="config-tabs">
-          <button class="c-tab active" onclick="switchTab('cloud',this)">Cloud (Render)</button>
-          <button class="c-tab" onclick="switchTab('local',this)">Local (WSL)</button>
+          <button class="c-tab active" onclick="switchTab('cloud',this)">☁ Cloud</button>
+          <button class="c-tab" onclick="switchTab('local',this)">💻 Local</button>
         </div>
         <div class="config-body">
           <div id="tab-cloud">
@@ -422,22 +422,33 @@
     }
   }
 }</code></pre>
+            <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6">
+              Works on <strong style="color:var(--text2)">Mac, Windows, Linux</strong> — no install needed.<br>
+              Replace <code style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">YOUR_MCP_AUTH_TOKEN</code> with the token from your server admin.
+            </div>
           </div>
           <div id="tab-local" style="display:none">
             <pre><code id="local-snippet">{
   "mcpServers": {
     "bags": {
-      "command": "wsl",
-      "args": ["bash", "-l", "-c",
-        "cd /home/userdammy/bags/bags-mcp-server && /usr/bin/node dist/index.js"]
+      "command": "node",
+      "args": ["/absolute/path/to/bags-mcp-server/dist/index.js"],
+      "env": {
+        "BAGS_API_KEY": "your_bags_api_key",
+        "ANTHROPIC_API_KEY": "your_anthropic_key",
+        "NODE_ENV": "production"
+      }
     }
   }
 }</code></pre>
+            <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6">
+              Replace the path with where you cloned the repo. Run <code style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">npm run build</code> first.
+            </div>
           </div>
           <div class="copy-row">
             <button class="copy-btn" onclick="copyConfig(this)" id="copy-btn-main">Copy config</button>
-            <span class="config-hint" id="tab-cloud-hint">Config file: <code>%APPDATA%\Claude\claude_desktop_config.json</code></span>
-            <span class="config-hint" id="tab-local-hint" style="display:none">Run <code>npm run build</code> first</span>
+            <span class="config-hint" id="tab-cloud-hint">Config file: <code id="config-path-hint">detecting OS…</code></span>
+            <span class="config-hint" id="tab-local-hint" style="display:none">Config file: <code id="config-path-local">detecting OS…</code></span>
           </div>
         </div>
       </div>
@@ -555,6 +566,23 @@
     const el = document.getElementById('demo-token-count');
     if (el) el.textContent = '✓ get_trending_tokens — live Bags.fm data';
   });
+
+  // ── OS detection → config file path ──────────────────────
+  (function() {
+    const ua = navigator.userAgent;
+    let configPath;
+    if (/Windows/i.test(ua)) {
+      configPath = '%APPDATA%\\Claude\\claude_desktop_config.json';
+    } else if (/Mac/i.test(ua)) {
+      configPath = '~/Library/Application Support/Claude/claude_desktop_config.json';
+    } else {
+      configPath = '~/.config/Claude/claude_desktop_config.json';
+    }
+    const h1 = document.getElementById('config-path-hint');
+    const h2 = document.getElementById('config-path-local');
+    if (h1) h1.textContent = configPath;
+    if (h2) h2.textContent = configPath;
+  })();
 
   // ── Config tabs ───────────────────────────────────────────
   let activeTab = 'cloud';
