@@ -37,7 +37,7 @@ Add to your Claude Desktop config (`%APPDATA%\Claude\claude_desktop_config.json`
 {
   "mcpServers": {
     "bags": {
-      "url": "https://your-render-url.onrender.com/mcp",
+      "url": "https://bags-mcp.onrender.com/mcp",
       "headers": {
         "Authorization": "Bearer your_mcp_auth_token"
       }
@@ -49,7 +49,7 @@ Add to your Claude Desktop config (`%APPDATA%\Claude\claude_desktop_config.json`
 ## Local dev (stdio)
 
 ```bash
-git clone https://github.com/yourusername/bags-mcp-server
+git clone https://github.com/Dami904/Bags-MCP
 cd bags-mcp-server
 npm install
 cp .env.example .env   # fill in BAGS_API_KEY
