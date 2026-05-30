@@ -272,7 +272,7 @@
         <div class="stat-lbl">Tool calls made</div>
       </div>
       <div class="stat-item">
-        <div class="stat-val">6</div>
+        <div class="stat-val">7</div>
         <div class="stat-lbl">Live tools</div>
       </div>
       <div class="stat-item">
@@ -313,7 +313,7 @@
         </div>
         <div class="win-body">
           <div class="win-msg"><strong>You:</strong> What are the top 5 trending tokens on Bags right now?</div>
-          <div class="win-tool">✓ get_trending_tokens — 166 tokens fetched</div>
+          <div class="win-tool" id="demo-token-count">✓ get_trending_tokens — fetching live data…</div>
           <table class="win-table">
             <thead><tr><th>#</th><th>Token</th><th>Price</th><th>MCap</th><th>24h</th></tr></thead>
             <tbody>
@@ -510,6 +510,14 @@
     const el = document.getElementById('stat-calls');
     if (el) el.textContent = m.totalCalls.toLocaleString();
   }).catch(()=>{});
+
+  fetch('/api/trending').then(r=>r.json()).then(tokens => {
+    const el = document.getElementById('demo-token-count');
+    if (el && Array.isArray(tokens)) el.textContent = `✓ get_trending_tokens — ${tokens.length} live tokens on Bags.fm`;
+  }).catch(()=>{
+    const el = document.getElementById('demo-token-count');
+    if (el) el.textContent = '✓ get_trending_tokens — live Bags.fm data';
+  });
 
   // ── Config tabs ───────────────────────────────────────────
   let activeTab = 'cloud';
