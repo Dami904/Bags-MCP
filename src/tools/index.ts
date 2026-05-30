@@ -14,7 +14,7 @@ export function registerTools(server: McpServer) {
       symbol: z.string().describe("Token symbol (e.g. 'PEPE') or contract address"),
     },
     async ({ symbol }) => {
-      recordToolCall("get_token_price");
+      await recordToolCall("get_token_price");
       try {
         const token = await findToken(symbol);
         if (!token) {
@@ -44,7 +44,7 @@ export function registerTools(server: McpServer) {
       symbol: z.string().describe("Token symbol or contract address"),
     },
     async ({ symbol }) => {
-      recordToolCall("get_token_info");
+      await recordToolCall("get_token_info");
       try {
         const token = await findToken(symbol);
         if (!token) {
@@ -93,7 +93,7 @@ export function registerTools(server: McpServer) {
       limit: z.number().min(1).max(50).default(10).describe("Number of tokens to return (max 50)"),
     },
     async ({ limit }) => {
-      recordToolCall("get_trending_tokens");
+      await recordToolCall("get_trending_tokens");
       try {
         const tokens = await getTopTokens(limit);
         const lines = tokens.map((t, idx) => {
@@ -117,7 +117,7 @@ export function registerTools(server: McpServer) {
       address: z.string().describe("Solana wallet address (public key)"),
     },
     async ({ address }) => {
-      recordToolCall("get_wallet_portfolio");
+      await recordToolCall("get_wallet_portfolio");
       try {
         const tokens = await getWalletTokens(address);
         if (tokens.length === 0) {
@@ -142,7 +142,7 @@ export function registerTools(server: McpServer) {
       limit: z.number().min(1).max(50).default(10).describe("Number of transactions to return"),
     },
     async ({ address, limit }) => {
-      recordToolCall("get_recent_transactions");
+      await recordToolCall("get_recent_transactions");
       try {
         const txs = await getRecentTransactions(address, limit);
         if (txs.length === 0) {
@@ -169,7 +169,7 @@ export function registerTools(server: McpServer) {
       amount_lamports: z.number().positive().describe("Amount in lamports/smallest unit (e.g. 1000000000 = 1 SOL)"),
     },
     async ({ from_mint, to_mint, amount_lamports }) => {
-      recordToolCall("prepare_swap");
+      await recordToolCall("prepare_swap");
       try {
         const quote = await getSwapQuote(from_mint, to_mint, amount_lamports);
         if (!quote) {
