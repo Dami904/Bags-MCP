@@ -72,7 +72,9 @@
     .connect-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
     .connect-box h3 { font-size: 1rem; margin-bottom: 0.5rem; }
     .connect-box p { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
-    pre { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.78rem; line-height: 1.6; }
+    pre { background: var(--pre-bg, #0d1117); color: var(--pre-text, #c9d1d9); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.78rem; line-height: 1.6; }
+    [data-theme="light"] { --pre-bg: #1e2433; --pre-text: #e2e8f0; }
+    [data-theme="dark"] { --pre-bg: #010409; --pre-text: #c9d1d9; }
     .copy-btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 0.35rem 0.85rem; font-size: 0.78rem; cursor: pointer; margin-top: 0.75rem; }
     .copy-btn:hover { opacity: 0.85; }
 
@@ -88,7 +90,9 @@
     <div class="status-dot"></div>
     <span class="status-label">Live</span>
     <button class="theme-btn" onclick="toggleTheme()" id="theme-toggle"><span class="theme-dot"></span><span id="theme-label">Dark</span></button>
-    <a href="/" class="back-link">← Landing page</a>
+    <a href="/" class="back-link">Home</a>
+    <a href="/chat" class="back-link">Chat</a>
+    <a href="https://github.com/Dami904/Bags-MCP" target="_blank" class="back-link">GitHub</a>
   </div>
 </nav>
 
@@ -110,7 +114,7 @@
     <div class="stat-card">
       <div class="stat-label">Unique Tools Called</div>
       <div class="stat-value accent-val" id="unique-tools">—</div>
-      <div class="stat-sub">of 6 available</div>
+      <div class="stat-sub">of 7 available</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Server Uptime Since</div>
@@ -127,6 +131,17 @@
     <div class="panel">
       <div class="panel-title">Recent Calls (last 10)</div>
       <div id="recent-calls"><span class="loading">Loading...</span></div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-bottom:2rem">
+    <div class="panel">
+      <div class="panel-title">Calls by AI Model</div>
+      <div id="model-bars"><span class="loading">Loading...</span></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Model Usage Share</div>
+      <div id="model-share" style="display:flex;flex-direction:column;gap:10px;padding-top:4px"><span class="loading">Loading...</span></div>
     </div>
   </div>
 
@@ -154,7 +169,7 @@
 </div>
 
 <script>
-  const tools = ['get_token_price','get_token_info','get_trending_tokens','get_wallet_portfolio','get_recent_transactions','prepare_swap'];
+  const tools = ['get_token_price','get_token_info','get_trending_tokens','get_wallet_portfolio','get_recent_transactions','prepare_swap','get_recently_launched'];
 
   function timeAgo(iso) {
     const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -190,8 +205,40 @@
 
       const recent = (m.recentCalls || []).slice(0, 10);
       document.getElementById('recent-calls').innerHTML = recent.length
-        ? recent.map(r => `<div class="call-item"><span class="call-tool">${r.tool}</span><span class="call-time">${timeAgo(r.timestamp)}</span></div>`).join('')
-        : '<span class="loading">No calls yet — try asking Claude a question!</span>';
+        ? recent.map(r => {
+            const modelColor = r.model === 'gemini' ? '#4285f4' : r.model === 'claude' ? '#f59e0b' : '#6e7681';
+            const badge = `<span style="font-size:0.7rem;background:${modelColor}22;color:${modelColor};border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:600">${r.model || 'unknown'}</span>`;
+            return `<div class="call-item"><span class="call-tool">${r.tool}${badge}</span><span class="call-time">${timeAgo(r.timestamp)}</span></div>`;
+          }).join('')
+        : '<span class="loading">No calls yet — try the chat!</span>';
+
+      // Model breakdown
+      const modelCounts = m.modelCounts || {};
+      const models = [['claude','#f59e0b'],['gemini','#4285f4']];
+      const maxModel = Math.max(...models.map(([k]) => modelCounts[k] ?? 0), 1);
+      document.getElementById('model-bars').innerHTML = models.map(([name, color]) => {
+        const c = modelCounts[name] ?? 0;
+        return `<div class="bar-row">
+          <div class="bar-label" style="color:${color}">${name}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(c/maxModel*100)}%;background:${color}"></div></div>
+          <div class="bar-count">${c}</div>
+        </div>`;
+      }).join('');
+
+      const total = models.reduce((s,[k]) => s + (modelCounts[k] ?? 0), 0);
+      document.getElementById('model-share').innerHTML = total === 0
+        ? '<span class="loading">No model usage yet</span>'
+        : models.map(([name, color]) => {
+            const c = modelCounts[name] ?? 0;
+            const pct = total ? Math.round(c / total * 100) : 0;
+            return `<div style="display:flex;align-items:center;gap:10px">
+              <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0"></div>
+              <span style="font-size:0.85rem;flex:1;color:var(--text2)">${name}</span>
+              <span style="font-size:0.85rem;font-weight:700;color:${color}">${pct}%</span>
+              <span style="font-size:0.75rem;color:var(--muted)">${c} calls</span>
+            </div>`;
+          }).join('');
+
     } catch(e) {
       document.getElementById('tool-bars').innerHTML = '<span class="loading">Could not load metrics</span>';
     }

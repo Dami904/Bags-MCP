@@ -8,7 +8,8 @@ const METRICS_FILE = join(__dirname, "../metrics.json");
 export interface Metrics {
   totalCalls: number;
   toolCounts: Record<string, number>;
-  recentCalls: { tool: string; timestamp: string }[];
+  modelCounts: Record<string, number>;
+  recentCalls: { tool: string; model: string; timestamp: string }[];
   startedAt: string;
 }
 
@@ -23,6 +24,7 @@ function load(): Metrics {
   return {
     totalCalls: 0,
     toolCounts: {},
+    modelCounts: {},
     recentCalls: [],
     startedAt: new Date().toISOString(),
   };
@@ -38,10 +40,11 @@ function save(m: Metrics) {
 
 const state = load();
 
-export function recordToolCall(toolName: string) {
+export function recordToolCall(toolName: string, model = "unknown") {
   state.totalCalls++;
   state.toolCounts[toolName] = (state.toolCounts[toolName] ?? 0) + 1;
-  state.recentCalls.unshift({ tool: toolName, timestamp: new Date().toISOString() });
+  state.modelCounts[model] = (state.modelCounts[model] ?? 0) + 1;
+  state.recentCalls.unshift({ tool: toolName, model, timestamp: new Date().toISOString() });
   if (state.recentCalls.length > 100) state.recentCalls = state.recentCalls.slice(0, 100);
   save(state);
 }

@@ -98,7 +98,7 @@ const TOOL_DEFS: Anthropic.Tool[] = [
 ];
 
 async function executeTool(name: string, input: Record<string, unknown>): Promise<string> {
-  recordToolCall(name);
+  recordToolCall(name, "claude");
   try {
     switch (name) {
       case "get_trending_tokens": {

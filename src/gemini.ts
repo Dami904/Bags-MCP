@@ -48,7 +48,7 @@ const TOOL_DEFS: FunctionDeclaration[] = [
 ];
 
 async function executeTool(name: string, args: Record<string, unknown>): Promise<string> {
-  recordToolCall(name);
+  recordToolCall(name, "gemini");
   try {
     switch (name) {
       case "get_trending_tokens": {
