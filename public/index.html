@@ -211,8 +211,11 @@
 
     /* ── RESPONSIVE ─────────────────────────────────────────── */
     @media(max-width:768px){
-      .topbar { padding: 0 16px; }
-      .topbar-nav { display: none; }
+      .topbar { padding: 0 12px; gap: 8px; }
+      .topbar-nav { gap: 0; }
+      .topbar-nav a { font-size: 12px; padding: 4px 7px; }
+      .topbar-name { display: none; }
+      .cta-btn { display: none; }
       .container { padding: 0 16px; }
       .hero-inner { padding: 0 16px; }
       .demo-grid, .connect-inner, .token-inner { grid-template-columns: 1fr; gap: 28px; }
@@ -225,6 +228,8 @@
     @media(max-width:480px){
       .tools-grid, .how-grid { grid-template-columns: 1fr; }
       .hero h1 { font-size: 2.2rem; }
+      .topbar-nav a { font-size: 11px; padding: 4px 5px; }
+      .theme-btn { padding: 4px 8px 4px 6px; font-size: 11px; }
     }
   </style>
 </head>
