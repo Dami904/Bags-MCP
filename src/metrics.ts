@@ -16,7 +16,14 @@ export interface Metrics {
 function load(): Metrics {
   if (existsSync(METRICS_FILE)) {
     try {
-      return JSON.parse(readFileSync(METRICS_FILE, "utf-8"));
+      const data = JSON.parse(readFileSync(METRICS_FILE, "utf-8"));
+      return {
+        totalCalls: data.totalCalls ?? 0,
+        toolCounts: data.toolCounts ?? {},
+        modelCounts: data.modelCounts ?? {},
+        recentCalls: data.recentCalls ?? [],
+        startedAt: data.startedAt ?? new Date().toISOString(),
+      };
     } catch {
       // fall through to default
     }
