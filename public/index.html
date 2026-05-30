@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BagsMCP — Ask Claude about Bags.fm</title>
+  <meta name="description" content="Live Solana token data, wallet analysis, and swap quotes through natural language with Claude AI." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── TOKENS ─────────────────────────────────────────── */
+    :root {
+      --nav-bg: #0d1f1a;
+      --accent: #10b981;
+      --accent2: #34d399;
+      --accent-bg: rgba(16,185,129,0.1);
+      --accent-border: rgba(16,185,129,0.25);
+      --red: #ef4444;
+      --green: #10b981;
+    }
+    [data-theme="light"] {
+      --bg: #f7f6f2;
+      --surface: #ffffff;
+      --surface2: #f1f0ec;
+      --border: #e4e2db;
+      --border2: #d1cfc7;
+      --text: #0f1a16;
+      --text2: #3d4f47;
+      --muted: #7a8c84;
+      --card-bg: #ffffff;
+      --pre-bg: #1a1a1a;
+      --pre-text: #d4d4d4;
+      --badge-bg: #e8f5f0;
+      --badge-text: #0d6b4f;
+      --num-bg: #e8f5f0;
+      --num-text: #0d6b4f;
+    }
+    [data-theme="dark"] {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1f2937;
+      --border: #21262d;
+      --border2: #30363d;
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --muted: #6e7681;
+      --card-bg: #161b22;
+      --pre-bg: #010409;
+      --pre-text: #c9d1d9;
+      --badge-bg: rgba(16,185,129,0.12);
+      --badge-text: #34d399;
+      --num-bg: rgba(16,185,129,0.12);
+      --num-text: #34d399;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; line-height: 1.6; transition: background 0.2s, color 0.2s; }
+
+    /* ── NAV ──────────────────────────────────────────────── */
+    .topbar { background: var(--nav-bg); color: #e2e8e4; padding: 0 40px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .topbar-left { display: flex; align-items: center; gap: 32px; }
+    .topbar-logo { display: flex; align-items: center; gap: 9px; text-decoration: none; color: #fff; }
+    .topbar-mark { width: 28px; height: 28px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #fff; flex-shrink: 0; }
+    .topbar-name { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+    .topbar-nav { display: flex; gap: 4px; }
+    .topbar-nav a { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 13.5px; padding: 5px 10px; border-radius: 5px; transition: all 0.15s; }
+    .topbar-nav a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .theme-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px; }
+    .theme-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .cta-btn { background: var(--accent); color: #fff; border: none; border-radius: 7px; padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.15s; }
+    .cta-btn:hover { background: var(--accent2); color: #0d1117; }
+
+    /* ── LAYOUT PRIMITIVES ─────────────────────────────────── */
+    .container { max-width: 1000px; margin: 0 auto; padding: 0 40px; }
+    .section-label { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .section-num { font-size: 11px; font-weight: 700; color: var(--num-text); background: var(--num-bg); border-radius: 4px; padding: 2px 7px; font-family: 'SF Mono', Consolas, monospace; letter-spacing: 0.05em; }
+    .section-slug { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .divider { border: none; border-top: 1px solid var(--border); }
+
+    /* ── HERO ──────────────────────────────────────────────── */
+    .hero { padding: 80px 0 60px; border-bottom: 1px solid var(--border); }
+    .hero-inner { max-width: 1000px; margin: 0 auto; padding: 0 40px; }
+    .hero-tag { display: inline-flex; align-items: center; gap: 7px; background: var(--badge-bg); color: var(--badge-text); border-radius: 100px; padding: 5px 14px; font-size: 12px; font-weight: 600; margin-bottom: 28px; letter-spacing: 0.03em; }
+    .tag-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; flex-shrink: 0; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .hero h1 { font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 22px; max-width: 780px; }
+    .hero h1 em { font-style: normal; color: var(--accent); }
+    .hero-sub { font-size: 17px; color: var(--text2); max-width: 560px; line-height: 1.7; margin-bottom: 36px; }
+    .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 56px; }
+    .btn-main { background: var(--accent); color: #fff; border: none; border-radius: 9px; padding: 12px 22px; font-size: 14.5px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.15s; }
+    .btn-main:hover { background: #059669; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(16,185,129,0.3); }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border2); border-radius: 9px; padding: 12px 22px; font-size: 14.5px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.15s; }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+    .stats-row { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+    .stat-item { flex: 1; padding: 18px 20px; border-right: 1px solid var(--border); text-align: center; }
+    .stat-item:last-child { border-right: none; }
+    .stat-val { font-size: 24px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; line-height: 1; margin-bottom: 4px; }
+    .stat-lbl { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+    /* ── DEMO WINDOW ────────────────────────────────────────── */
+    .demo-section { padding: 72px 0; border-bottom: 1px solid var(--border); }
+    .demo-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 48px; align-items: center; }
+    .demo-copy h2 { font-size: 28px; font-weight: 800; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 14px; }
+    .demo-copy h2 em { font-style: normal; color: var(--accent); }
+    .demo-copy p { color: var(--text2); font-size: 15px; line-height: 1.7; margin-bottom: 20px; }
+    .example-prompts { display: flex; flex-direction: column; gap: 8px; }
+    .prompt-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--text2); cursor: pointer; text-align: left; transition: all 0.15s; display: flex; align-items: center; gap: 10px; }
+    .prompt-pill:hover { border-color: var(--accent); color: var(--text); background: var(--accent-bg); }
+    .prompt-pill span { font-size: 15px; flex-shrink: 0; }
+
+    .demo-window { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.12); }
+    .win-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+    .win-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .wd-r{background:#f85149}.wd-y{background:#e3b341}.wd-g{background:#3fb950}
+    .win-title { margin-left: 6px; font-size: 11.5px; color: var(--muted); }
+    .win-body { padding: 16px 18px; }
+    .win-msg { background: var(--accent-bg); border-left: 3px solid var(--accent); padding: 9px 12px; border-radius: 0 7px 7px 0; font-size: 13px; margin-bottom: 14px; color: var(--text2); }
+    .win-msg strong { color: var(--text); }
+    .win-tool { font-size: 11.5px; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .win-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .win-table th { color: var(--muted); text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .win-table td { padding: 8px 8px; border-bottom: 1px solid var(--border); }
+    .win-table tr:last-child td { border: none; }
+    .win-table td:first-child { font-weight: 600; }
+    .c-up{color:#3fb950;font-weight:600}.c-down{color:#f85149;font-weight:600}
+
+    /* ── TOOLS ──────────────────────────────────────────────── */
+    .tools-section { padding: 72px 0; border-bottom: 1px solid var(--border); }
+    .tools-header { max-width: 600px; margin-bottom: 40px; }
+    .tools-header h2 { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 10px; }
+    .tools-header h2 em { font-style: normal; color: var(--accent); }
+    .tools-header p { color: var(--text2); font-size: 15px; }
+    .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .tool-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: all 0.15s; cursor: default; }
+    .tool-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .tool-icon { font-size: 22px; margin-bottom: 12px; }
+    .tool-fn { font-size: 12.5px; font-weight: 700; font-family: 'SF Mono', Consolas, monospace; color: var(--accent); margin-bottom: 6px; }
+    .tool-desc { font-size: 13px; color: var(--text2); line-height: 1.55; }
+
+    /* ── HOW IT WORKS ───────────────────────────────────────── */
+    .how-section { padding: 72px 0; border-bottom: 1px solid var(--border); }
+    .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; }
+    .how-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .how-num { width: 36px; height: 36px; border-radius: 8px; background: var(--accent-bg); border: 1px solid var(--accent-border); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: var(--accent); margin-bottom: 14px; }
+    .how-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .how-card p { font-size: 13.5px; color: var(--text2); line-height: 1.6; }
+    .how-badge { display: inline-block; margin-top: 10px; font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 4px; }
+    .badge-free { background: #dcfce7; color: #15803d; }
+    .badge-desktop { background: #dbeafe; color: #1d4ed8; }
+    .badge-dev { background: #fef3c7; color: #92400e; }
+    [data-theme="dark"] .badge-free { background: rgba(16,185,129,0.15); color: #34d399; }
+    [data-theme="dark"] .badge-desktop { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    [data-theme="dark"] .badge-dev { background: rgba(245,158,11,0.15); color: #fbbf24; }
+
+    /* ── CONNECT ─────────────────────────────────────────────── */
+    .connect-section { padding: 72px 0; border-bottom: 1px solid var(--border); }
+    .connect-inner { display: grid; grid-template-columns: 1fr 1.5fr; gap: 48px; align-items: start; }
+    .connect-copy h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 12px; }
+    .connect-copy h2 em { font-style: normal; color: var(--accent); }
+    .connect-copy p { font-size: 14.5px; color: var(--text2); line-height: 1.7; margin-bottom: 20px; }
+    .platform-list { display: flex; flex-direction: column; gap: 10px; }
+    .platform-item { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text2); }
+    .platform-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .pi-claude { background: #fef3c7; }
+    .pi-cursor { background: #dbeafe; }
+    .pi-web { background: #dcfce7; }
+    [data-theme="dark"] .pi-claude { background: rgba(245,158,11,0.15); }
+    [data-theme="dark"] .pi-cursor { background: rgba(59,130,246,0.15); }
+    [data-theme="dark"] .pi-web { background: rgba(16,185,129,0.15); }
+
+    .config-card { background: var(--card-bg); border: 1px solid var(--border2); border-radius: 12px; overflow: hidden; }
+    .config-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--surface2); }
+    .c-tab { padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.15s; margin-bottom: -1px; }
+    .c-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--card-bg); }
+    .config-body { padding: 16px; }
+    pre { background: var(--pre-bg); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.7; }
+    code { font-family: 'SF Mono', 'Fira Code', Consolas, monospace; color: var(--pre-text); }
+    .copy-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+    .copy-btn { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 6px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .copy-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .config-hint { font-size: 11.5px; color: var(--muted); }
+    .config-hint code { background: var(--surface2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; font-size: 11px; color: var(--text2); }
+
+    /* ── TOKEN ──────────────────────────────────────────────── */
+    .token-section { padding: 72px 0; border-bottom: 1px solid var(--border); }
+    .token-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+    .token-copy h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 12px; }
+    .token-copy h2 em { font-style: normal; color: var(--accent); }
+    .token-copy p { font-size: 14.5px; color: var(--text2); line-height: 1.7; }
+    .token-card { background: var(--card-bg); border: 1px solid var(--border2); border-radius: 14px; padding: 28px; text-align: center; }
+    .token-symbol { font-size: 40px; font-weight: 900; letter-spacing: -0.03em; color: var(--accent); margin-bottom: 6px; }
+    .token-name { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+    .token-addr { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-family: 'SF Mono', Consolas, monospace; font-size: 12px; color: var(--text2); word-break: break-all; margin-bottom: 14px; }
+    .token-perks { display: flex; flex-direction: column; gap: 8px; text-align: left; margin-top: 16px; }
+    .perk { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text2); }
+    .perk-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+    /* ── FOOTER ─────────────────────────────────────────────── */
+    footer { padding: 36px 40px; border-top: 1px solid var(--border); }
+    .footer-inner { max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .footer-brand { display: flex; align-items: center; gap: 8px; }
+    .footer-mark { width: 24px; height: 24px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; }
+    .footer-text { font-size: 13px; color: var(--muted); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { color: var(--muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--text2); }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────── */
+    @media(max-width:768px){
+      .topbar { padding: 0 16px; }
+      .topbar-nav { display: none; }
+      .container { padding: 0 16px; }
+      .hero-inner { padding: 0 16px; }
+      .demo-grid, .connect-inner, .token-inner { grid-template-columns: 1fr; gap: 28px; }
+      .tools-grid, .how-grid { grid-template-columns: 1fr 1fr; }
+      .stats-row { flex-wrap: wrap; }
+      .stat-item { min-width: 50%; }
+      footer { padding: 24px 16px; }
+      .hero { padding: 48px 0 40px; }
+    }
+    @media(max-width:480px){
+      .tools-grid, .how-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 2.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="topbar">
+  <div class="topbar-left">
+    <a class="topbar-logo" href="/">
+      <div class="topbar-mark">B</div>
+      <span class="topbar-name">BagsMCP</span>
+    </a>
+    <div class="topbar-nav">
+      <a href="#demo">What is it</a>
+      <a href="#tools">Tools</a>
+      <a href="#connect">Connect</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="https://github.com/yourusername/bags-mcp-server" target="_blank">GitHub</a>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()" id="theme-toggle">
+      <span id="theme-icon">🌙</span> Dark
+    </button>
+    <a href="/chat" class="cta-btn">Try live →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag"><div class="tag-dot"></div>Bags Hackathon 2026 · Claude Skills + AI Agents</div>
+    <h1>Ask Claude about<br><em>Bags.fm</em> in plain English.</h1>
+    <p class="hero-sub">Live Solana token prices, wallet analysis, market trends, and swap quotes — all through natural language. No commands. No config. Just ask.</p>
+    <div class="hero-btns">
+      <a href="/chat" class="btn-main">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        Try it — no setup needed
+      </a>
+      <a href="#connect" class="btn-ghost">Connect to Claude Desktop</a>
+    </div>
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-val" id="stat-calls">0</div>
+        <div class="stat-lbl">Tool calls made</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">6</div>
+        <div class="stat-lbl">Live tools</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">3</div>
+        <div class="stat-lbl">AI prompts</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">Free</div>
+        <div class="stat-lbl">No signup needed</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="demo-section" id="demo">
+  <div class="container">
+    <div class="section-label">
+      <span class="section-num">01</span>
+      <span class="section-slug">What is BagsMCP</span>
+    </div>
+    <div class="demo-grid">
+      <div class="demo-copy">
+        <h2>The <em>AI layer</em> for the Bags.fm ecosystem.</h2>
+        <p>BagsMCP is an MCP server that gives Claude native access to live Bags.fm data. You talk to Claude like a person — it handles the API calls, formats the data, and surfaces what matters.</p>
+        <p>Works in Claude Desktop, any MCP client, and directly in the browser — no install required.</p>
+        <div class="example-prompts">
+          <button class="prompt-pill" onclick="window.location='/chat'"><span>🔥</span> "What are the top 5 trending tokens right now?"</button>
+          <button class="prompt-pill" onclick="window.location='/chat'"><span>📊</span> "Give me full info on ASTEROID including audit data"</button>
+          <button class="prompt-pill" onclick="window.location='/chat'"><span>💼</span> "Analyze this wallet: [address]"</button>
+          <button class="prompt-pill" onclick="window.location='/chat'"><span>🌐</span> "What's the overall market sentiment on Bags right now?"</button>
+        </div>
+      </div>
+      <div class="demo-window">
+        <div class="win-bar">
+          <div class="win-dot wd-r"></div><div class="win-dot wd-y"></div><div class="win-dot wd-g"></div>
+          <span class="win-title">BagsMCP Chat — bagsmcp.onrender.com/chat</span>
+        </div>
+        <div class="win-body">
+          <div class="win-msg"><strong>You:</strong> What are the top 5 trending tokens on Bags right now?</div>
+          <div class="win-tool">✓ get_trending_tokens — 166 tokens fetched</div>
+          <table class="win-table">
+            <thead><tr><th>#</th><th>Token</th><th>Price</th><th>MCap</th><th>24h</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>PEPE</td><td>$0.000121</td><td>$120K</td><td class="c-down">-0.16%</td></tr>
+              <tr><td>2</td><td>ASTEROID</td><td>$0.01512</td><td>$15.1M</td><td class="c-up">+16.11%</td></tr>
+              <tr><td>3</td><td>NYAN</td><td>$0.000171</td><td>$171K</td><td class="c-down">-0.15%</td></tr>
+              <tr><td>4</td><td>BTH</td><td>$0.000106</td><td>$103K</td><td class="c-down">-8.56%</td></tr>
+              <tr><td>5</td><td>GAS</td><td>$0.0000337</td><td>$33K</td><td class="c-up">+3.42%</td></tr>
+            </tbody>
+          </table>
+          <p style="margin-top:10px;font-size:12.5px;color:var(--text2)"><strong style="color:var(--text)">ASTEROID</strong> stands out — <span class="c-up">+16.11%</span> with $451K in 24h volume. 🚀</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section class="tools-section" id="tools">
+  <div class="container">
+    <div class="section-label">
+      <span class="section-num">02</span>
+      <span class="section-slug">Tools</span>
+    </div>
+    <div class="tools-header">
+      <h2>6 tools. Real-time <em>Solana</em> data.</h2>
+      <p>Claude calls these automatically when you ask the right question. No syntax. No commands.</p>
+    </div>
+    <div class="tools-grid">
+      <div class="tool-card"><div class="tool-icon">🔥</div><div class="tool-fn">get_trending_tokens</div><div class="tool-desc">Top tokens on Bags.fm ranked by lifetime fees. Price, MCap, 24h stats for up to 50 tokens.</div></div>
+      <div class="tool-card"><div class="tool-icon">📊</div><div class="tool-fn">get_token_info</div><div class="tool-desc">Full market data — audit results, holder count, organic score, buy/sell breakdown, liquidity.</div></div>
+      <div class="tool-card"><div class="tool-icon">💰</div><div class="tool-fn">get_token_price</div><div class="tool-desc">Live USD and SOL price with 24h change and volume. Updated in real time.</div></div>
+      <div class="tool-card"><div class="tool-icon">💼</div><div class="tool-fn">get_wallet_portfolio</div><div class="tool-desc">Full token breakdown for any Solana wallet. See every position in plain language.</div></div>
+      <div class="tool-card"><div class="tool-icon">📜</div><div class="tool-fn">get_recent_transactions</div><div class="tool-desc">Last N on-chain transactions — status, timestamp, signature. Any public wallet.</div></div>
+      <div class="tool-card"><div class="tool-icon">🔄</div><div class="tool-fn">prepare_swap</div><div class="tool-desc">Swap quote via Bags.fm trade API. Estimated output, price impact, fees. Read-only — no execution.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="how-section">
+  <div class="container">
+    <div class="section-label">
+      <span class="section-num">03</span>
+      <span class="section-slug">How to use it</span>
+    </div>
+    <div class="tools-header">
+      <h2>Three ways to <em>access</em> it.</h2>
+      <p>Pick whichever works for you. All three hit the same live data.</p>
+    </div>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num">1</div>
+        <h3>Web chat</h3>
+        <p>Visit <a href="/chat" style="color:var(--accent)">bagsmcp.onrender.com/chat</a> and start asking. No install, no login, no config. Works in any browser on any device.</p>
+        <span class="how-badge badge-free">Free · No signup</span>
+      </div>
+      <div class="how-card">
+        <div class="how-num">2</div>
+        <h3>Claude Desktop</h3>
+        <p>Add one JSON snippet to your config file. Claude gains Bags.fm tools in every conversation permanently.</p>
+        <span class="how-badge badge-desktop">Claude Desktop</span>
+      </div>
+      <div class="how-card">
+        <div class="how-num">3</div>
+        <h3>Any MCP client</h3>
+        <p>Works with Cursor, Windsurf, Cline, and every other MCP-compatible tool. Point at the HTTP endpoint.</p>
+        <span class="how-badge badge-dev">For developers</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONNECT -->
+<section class="connect-section" id="connect">
+  <div class="container">
+    <div class="section-label">
+      <span class="section-num">04</span>
+      <span class="section-slug">Connect</span>
+    </div>
+    <div class="connect-inner">
+      <div class="connect-copy">
+        <h2>One config.<br><em>Instant</em> access.</h2>
+        <p>Add this to your Claude Desktop config file and restart. Your MCP server appears immediately in every new conversation.</p>
+        <div class="platform-list">
+          <div class="platform-item"><div class="platform-icon pi-claude">🤖</div>Claude Desktop (Mac / Windows)</div>
+          <div class="platform-item"><div class="platform-icon pi-cursor">✦</div>Cursor IDE</div>
+          <div class="platform-item"><div class="platform-icon pi-web">🌐</div>Web chat — no config needed</div>
+        </div>
+      </div>
+      <div class="config-card">
+        <div class="config-tabs">
+          <button class="c-tab active" onclick="switchTab('cloud',this)">Cloud (Render)</button>
+          <button class="c-tab" onclick="switchTab('local',this)">Local (WSL)</button>
+        </div>
+        <div class="config-body">
+          <div id="tab-cloud">
+            <pre><code id="cloud-snippet">{
+  "mcpServers": {
+    "bags": {
+      "url": "https://your-render-url.onrender.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_AUTH_TOKEN"
+      }
+    }
+  }
+}</code></pre>
+          </div>
+          <div id="tab-local" style="display:none">
+            <pre><code id="local-snippet">{
+  "mcpServers": {
+    "bags": {
+      "command": "wsl",
+      "args": ["bash", "-l", "-c",
+        "cd /home/userdammy/bags/bags-mcp-server && /usr/bin/node dist/index.js"]
+    }
+  }
+}</code></pre>
+          </div>
+          <div class="copy-row">
+            <button class="copy-btn" onclick="copyConfig(this)" id="copy-btn-main">Copy config</button>
+            <span class="config-hint" id="tab-cloud-hint">Config file: <code>%APPDATA%\Claude\claude_desktop_config.json</code></span>
+            <span class="config-hint" id="tab-local-hint" style="display:none">Run <code>npm run build</code> first</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOKEN -->
+<section class="token-section" id="token">
+  <div class="container">
+    <div class="section-label">
+      <span class="section-num">05</span>
+      <span class="section-slug">Bags Token</span>
+    </div>
+    <div class="token-inner">
+      <div class="token-copy">
+        <h2>Earn fees with <em>$BMCP</em>.</h2>
+        <p>BagsMCP participates in Bags.fm's fee-sharing program. Every swap routed through the platform generates fees distributed to $BMCP holders.</p>
+        <p style="margin-top:12px">Not required to use BagsMCP — but it earns you a share of the platform's revenue.</p>
+      </div>
+      <div class="token-card">
+        <div class="token-symbol">$BMCP</div>
+        <div class="token-name">The BagsMCP token on Bags.fm</div>
+        <div class="token-addr" id="token-addr">CONTRACT ADDRESS COMING SOON</div>
+        <a href="https://bags.fm" class="btn-main" target="_blank" style="width:100%;justify-content:center">View on Bags.fm →</a>
+        <div class="token-perks">
+          <div class="perk"><div class="perk-dot"></div>Fee share from swap volume</div>
+          <div class="perk"><div class="perk-dot"></div>Launched on Bags.fm bonding curve</div>
+          <div class="perk"><div class="perk-dot"></div>Part of the Bags.fm ecosystem</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-mark">B</div>
+      <span class="footer-text">BagsMCP · Built for Bags Hackathon 2026 · Claude Skills + Bags API + AI Agents</span>
+    </div>
+    <div class="footer-links">
+      <a href="/chat">Chat</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="https://github.com/yourusername/bags-mcp-server" target="_blank">GitHub</a>
+      <a href="https://bags.fm" target="_blank">Bags.fm</a>
+      <a href="https://docs.bags.fm" target="_blank">Docs</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Theme ─────────────────────────────────────────────────
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    const btn = document.getElementById('theme-toggle');
+    const icon = document.getElementById('theme-icon');
+    if (t === 'dark') { icon.textContent = '☀️'; btn.childNodes[1].textContent = ' Light'; }
+    else { icon.textContent = '🌙'; btn.childNodes[1].textContent = ' Dark'; }
+    localStorage.setItem('theme', t);
+  }
+  function toggleTheme() {
+    applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+  // Apply saved or system preference
+  const saved = localStorage.getItem('theme');
+  if (saved) applyTheme(saved);
+  else if (window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme('dark');
+
+  // ── Live stats ────────────────────────────────────────────
+  fetch('/api/metrics').then(r=>r.json()).then(m => {
+    const el = document.getElementById('stat-calls');
+    if (el) el.textContent = m.totalCalls.toLocaleString();
+  }).catch(()=>{});
+
+  // ── Config tabs ───────────────────────────────────────────
+  let activeTab = 'cloud';
+  function switchTab(name, el) {
+    activeTab = name;
+    document.getElementById('tab-cloud').style.display = name==='cloud' ? '' : 'none';
+    document.getElementById('tab-local').style.display = name==='local' ? '' : 'none';
+    document.getElementById('tab-cloud-hint').style.display = name==='cloud' ? '' : 'none';
+    document.getElementById('tab-local-hint').style.display = name==='local' ? '' : 'none';
+    document.querySelectorAll('.c-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+  function copyConfig(btn) {
+    const id = activeTab === 'cloud' ? 'cloud-snippet' : 'local-snippet';
+    navigator.clipboard.writeText(document.getElementById(id).textContent);
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = orig, 1800);
+  }
+</script>
+</body>
+</html>

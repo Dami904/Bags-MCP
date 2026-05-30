@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BagsMCP — Chat</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117;
+      --sidebar: #0a0d13;
+      --surface: #161b22;
+      --surface2: #1f2937;
+      --border: #21262d;
+      --border2: #30363d;
+      --accent: #10b981;
+      --accent2: #34d399;
+      --accent-bg: rgba(16,185,129,0.08);
+      --accent-border: rgba(16,185,129,0.25);
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --muted: #6e7681;
+      --red: #f85149;
+      --yellow: #e3b341;
+      --blue: #58a6ff;
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; display: flex; font-size: 14px; }
+
+    /* ── SIDEBAR ──────────────────────────────────────── */
+    .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+
+    .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
+    .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .logo-mark { width: 32px; height: 32px; background: linear-gradient(135deg, #059669, var(--accent2)); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; flex-shrink: 0; }
+    .logo-name { font-weight: 700; font-size: 15px; }
+    .logo-sub { font-size: 11px; color: var(--muted); }
+
+    .new-chat-btn { width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 8px; color: var(--accent2); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+    .new-chat-btn:hover { background: rgba(16,185,129,0.14); }
+    .new-chat-btn svg { width: 14px; height: 14px; }
+
+    .sidebar-section { padding: 12px 16px 4px; }
+    .sidebar-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+
+    .starter { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; border-radius: 7px; cursor: pointer; transition: background 0.15s; color: var(--text2); font-size: 12.5px; line-height: 1.4; }
+    .starter:hover { background: var(--surface); color: var(--text); }
+    .starter-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+    .sidebar-bottom { margin-top: auto; padding: 12px 16px; border-top: 1px solid var(--border); }
+    .sidebar-bottom a { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 6px; color: var(--text2); font-size: 12.5px; text-decoration: none; transition: background 0.15s; }
+    .sidebar-bottom a:hover { background: var(--surface); color: var(--text); }
+    .sidebar-bottom svg { width: 14px; height: 14px; opacity: 0.7; }
+
+    /* ── MAIN ──────────────────────────────────────────── */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .topbar-left { display: flex; align-items: center; gap: 10px; }
+    .live-badge { display: flex; align-items: center; gap: 5px; background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 100px; padding: 3px 10px; font-size: 11.5px; font-weight: 500; color: var(--accent2); }
+    .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
+    .model-tag { font-size: 11.5px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; }
+    [data-theme="light"] { --bg:#f7f6f2; --sidebar:#eceae4; --surface:#ffffff; --surface2:#f1f0ec; --border:#e4e2db; --border2:#d1cfc7; --accent:#10b981; --accent2:#059669; --accent-bg:rgba(16,185,129,0.08); --accent-border:rgba(16,185,129,0.2); --text:#0f1a16; --text2:#3d4f47; --muted:#7a8c84; --user-bubble:#e8f5f0; --user-border:#10b981; }
+    .theme-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 3px 9px; font-size: 11.5px; cursor: pointer; transition: all 0.15s; }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--text2); }
+
+    /* ── MESSAGES ──────────────────────────────────────── */
+    .messages { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+    .msg-inner { max-width: 720px; margin: 0 auto; padding: 8px 20px; }
+
+    /* WELCOME */
+    .welcome { max-width: 720px; margin: 0 auto; padding: 48px 20px 24px; }
+    .welcome-heading { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .welcome-heading span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .welcome-sub { color: var(--text2); font-size: 14.5px; margin-bottom: 28px; line-height: 1.6; }
+    .suggestion-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .sug-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; text-align: left; transition: border-color 0.15s, background 0.15s; }
+    .sug-card:hover { border-color: var(--accent); background: var(--accent-bg); }
+    .sug-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: var(--text); }
+    .sug-desc { font-size: 12px; color: var(--text2); line-height: 1.4; }
+
+    /* MESSAGE ROWS */
+    .msg-row { padding: 16px 0; border-bottom: 1px solid rgba(33,38,45,0.4); }
+    .msg-row:last-child { border-bottom: none; }
+    .msg-row.user .msg-inner { }
+    .msg-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .msg-avatar { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .msg-avatar.bot { background: linear-gradient(135deg, #059669, var(--accent2)); color: #fff; }
+    .msg-avatar.user { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); font-size: 13px; }
+    .msg-name { font-size: 13px; font-weight: 600; }
+    .msg-time { font-size: 11px; color: var(--muted); }
+    .msg-actions { margin-left: auto; display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+    .msg-row:hover .msg-actions { opacity: 1; }
+    .action-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 3px 6px; border-radius: 5px; font-size: 11px; display: flex; align-items: center; gap: 4px; transition: all 0.15s; }
+    .action-btn:hover { background: var(--surface2); color: var(--text2); }
+    .action-btn svg { width: 12px; height: 12px; }
+
+    .msg-content { font-size: 14px; line-height: 1.7; color: var(--text); padding-left: 36px; }
+    .msg-content.user-content { color: var(--text); }
+
+    /* Markdown rendering */
+    .msg-content p { margin-bottom: 8px; }
+    .msg-content p:last-child { margin-bottom: 0; }
+    .msg-content strong { font-weight: 600; color: var(--text); }
+    .msg-content em { font-style: italic; color: var(--text2); }
+    .msg-content code { background: var(--surface2); border: 1px solid var(--border2); padding: 1px 5px; border-radius: 4px; font-family: 'SF Mono', Consolas, monospace; font-size: 12.5px; color: var(--accent2); }
+    .msg-content pre { background: #010409; border: 1px solid var(--border2); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 10px 0; }
+    .msg-content pre code { background: none; border: none; padding: 0; color: var(--text2); font-size: 12.5px; }
+    .msg-content ul, .msg-content ol { padding-left: 20px; margin-bottom: 8px; }
+    .msg-content li { margin-bottom: 3px; }
+    .msg-content h3 { font-size: 14px; font-weight: 700; margin: 12px 0 6px; }
+    .msg-content table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+    .msg-content th { text-align: left; padding: 7px 12px; background: var(--surface2); color: var(--text2); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border2); }
+    .msg-content td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .msg-content tr:last-child td { border-bottom: none; }
+    .msg-content tr:hover td { background: rgba(16,185,129,0.04); }
+    .up { color: #3fb950; } .down { color: var(--red); }
+
+    /* Tool indicator */
+    .tool-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 100px; padding: 4px 12px; font-size: 12px; color: var(--accent2); margin: 4px 0; margin-left: 36px; }
+    .tool-pill.done { background: rgba(16,185,129,0.05); color: var(--muted); border-color: var(--border); }
+    .spin { display: inline-block; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Cursor blink */
+    .cursor { display: inline-block; width: 2px; height: 14px; background: var(--accent2); margin-left: 1px; border-radius: 1px; animation: blink 1s step-end infinite; vertical-align: middle; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── INPUT ─────────────────────────────────────────── */
+    .input-wrap { padding: 16px 20px 20px; flex-shrink: 0; }
+    .input-box { max-width: 720px; margin: 0 auto; }
+    .input-field { display: flex; align-items: flex-end; gap: 10px; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 10px 12px; transition: border-color 0.2s, box-shadow 0.2s; }
+    .input-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+    textarea#input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: inherit; font-size: 14px; resize: none; line-height: 1.5; padding: 2px 0; min-height: 22px; max-height: 140px; }
+    textarea#input::placeholder { color: var(--muted); }
+    .send-btn { background: var(--accent); border: none; border-radius: 8px; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+    .send-btn:hover:not(:disabled) { background: var(--accent2); transform: scale(1.05); }
+    .send-btn:disabled { background: var(--surface2); cursor: not-allowed; transform: none; }
+    .send-btn svg { width: 15px; height: 15px; fill: #fff; }
+    .input-hint { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding: 0 2px; }
+    .hint-text { font-size: 11.5px; color: var(--muted); }
+    .hint-text kbd { background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px; padding: 1px 5px; font-family: inherit; font-size: 10.5px; }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .suggestion-grid { grid-template-columns: 1fr; }
+      .msg-inner { padding: 6px 14px; }
+      .welcome { padding: 32px 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <div class="logo-mark">B</div>
+      <div>
+        <div class="logo-name">BagsMCP</div>
+        <div class="logo-sub">Bags.fm AI Assistant</div>
+      </div>
+    </div>
+    <button class="new-chat-btn" onclick="newChat()">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z"/></svg>
+      New conversation
+    </button>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Quick start</div>
+    <div class="starter" onclick="sendStarter('What are the top 10 trending tokens on Bags.fm right now?')">
+      <span class="starter-icon">🔥</span>Top trending tokens
+    </div>
+    <div class="starter" onclick="sendStarter('Give me a full market overview of Bags.fm — biggest movers, volume, sentiment')">
+      <span class="starter-icon">🌐</span>Full market overview
+    </div>
+    <div class="starter" onclick="sendStarter('What is the price and full info for ASTEROID?')">
+      <span class="starter-icon">💰</span>ASTEROID token info
+    </div>
+    <div class="starter" onclick="sendStarter('Compare the top 3 tokens on Bags.fm side by side')">
+      <span class="starter-icon">⚖️</span>Compare top tokens
+    </div>
+    <div class="starter" onclick="sendStarter('Which tokens on Bags.fm have the best organic score and healthy audit data?')">
+      <span class="starter-icon">🔍</span>Find legit tokens
+    </div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <a href="/dashboard">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 3.5A1.5 1.5 0 012.5 2h11A1.5 1.5 0 0115 3.5v1A1.5 1.5 0 0113.5 6h-11A1.5 1.5 0 011 4.5v-1zm0 6A1.5 1.5 0 012.5 8h4A1.5 1.5 0 018 9.5v4A1.5 1.5 0 016.5 15h-4A1.5 1.5 0 011 13.5v-4zm8 0A1.5 1.5 0 0110.5 8h3a1.5 1.5 0 011.5 1.5v4a1.5 1.5 0 01-1.5 1.5h-3A1.5 1.5 0 019 13.5v-4z"/></svg>
+      Usage dashboard
+    </a>
+    <a href="/">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1A1.5 1.5 0 005 2.5V3H1.5A1.5 1.5 0 000 4.5v8A1.5 1.5 0 001.5 14h13a1.5 1.5 0 001.5-1.5v-8A1.5 1.5 0 0014.5 3H11v-.5A1.5 1.5 0 009.5 1h-3z"/></svg>
+      Home
+    </a>
+    <a href="https://bags.fm" target="_blank">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 4.42 3.58 8 8 8 4.42 0 8-3.58 8-8 0-4.42-3.58-8-8-8zm3.25 11H4.75L3.5 4.5h9L11.25 11z"/></svg>
+      Bags.fm
+    </a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="live-badge"><div class="pulse"></div>Live Bags.fm data</div>
+      <span class="model-tag">claude-sonnet-4-6</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:12px;color:var(--muted)" id="tool-count-display"></div>
+      <button class="theme-toggle" onclick="toggleChatTheme()" id="chat-theme-btn">🌙 Dark</button>
+    </div>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="welcome" id="welcome">
+      <div class="welcome-heading">Ask anything about <span>Bags.fm</span></div>
+      <div class="welcome-sub">Live Solana token data, wallet analysis, trending markets — all through natural language. No setup needed.</div>
+      <div class="suggestion-grid">
+        <button class="sug-card" onclick="sendStarter('What are the top 5 trending tokens on Bags.fm right now? Include price, market cap and 24h change.')">
+          <div class="sug-title">🔥 Trending tokens</div>
+          <div class="sug-desc">Top 5 on Bags.fm right now with live prices</div>
+        </button>
+        <button class="sug-card" onclick="sendStarter('Give me full info on ASTEROID — price, audit, holders, 24h stats')">
+          <div class="sug-title">📊 Deep token analysis</div>
+          <div class="sug-desc">Full ASTEROID breakdown with audit data</div>
+        </button>
+        <button class="sug-card" onclick="sendStarter('Give me a full market overview of Bags.fm right now — biggest movers, volume leaders, overall sentiment')">
+          <div class="sug-title">🌐 Market overview</div>
+          <div class="sug-desc">Biggest movers, volume, market sentiment</div>
+        </button>
+        <button class="sug-card" onclick="sendStarter('Which of the top tokens on Bags.fm have the cleanest audit data and highest organic score?')">
+          <div class="sug-title">🔍 Find legit tokens</div>
+          <div class="sug-desc">Filter by audit quality and organic score</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-wrap">
+    <div class="input-box">
+      <div class="input-field">
+        <textarea id="input" placeholder="Ask about tokens, wallets, prices, swaps..." rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send (Enter)">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+      <div class="input-hint">
+        <span class="hint-text">Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</span>
+        <span class="hint-text" id="char-count" style="color:var(--muted)"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let history = [];
+  let isLoading = false;
+  let totalCalls = 0;
+
+  const messagesEl = document.getElementById('messages');
+  const inputEl = document.getElementById('input');
+  const sendBtn = document.getElementById('send-btn');
+
+  // Load metrics for tool call display
+  fetch('/api/metrics').then(r=>r.json()).then(m => {
+    totalCalls = m.totalCalls;
+    updateCallDisplay();
+  }).catch(()=>{});
+
+  function updateCallDisplay() {
+    const el = document.getElementById('tool-count-display');
+    if (el) el.textContent = totalCalls ? `${totalCalls.toLocaleString()} total tool calls` : '';
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  }
+
+  inputEl.addEventListener('input', () => {
+    const len = inputEl.value.length;
+    const el = document.getElementById('char-count');
+    if (el) el.textContent = len > 50 ? `${len} chars` : '';
+  });
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function sendStarter(q) { inputEl.value = q; autoResize(inputEl); sendMessage(); }
+  function newChat() {
+    history = [];
+    messagesEl.innerHTML = '';
+    const w = document.createElement('div');
+    w.id = 'welcome';
+    w.className = 'welcome';
+    w.innerHTML = `<div class="welcome-heading">Ask anything about <span style="background:linear-gradient(135deg,#10b981,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Bags.fm</span></div>
+      <div class="welcome-sub" style="color:var(--text2);font-size:14.5px;margin-bottom:28px;line-height:1.6">Live Solana token data, wallet analysis, trending markets — all through natural language.</div>`;
+    messagesEl.appendChild(w);
+    inputEl.focus();
+  }
+
+  function timeStr() {
+    return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  }
+
+  function renderMarkdown(text) {
+    let s = text
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      // Tables
+      .replace(/\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)+)/g, (_, header, body) => {
+        const ths = header.split('|').filter(c=>c.trim()).map(c=>`<th>${c.trim()}</th>`).join('');
+        const rows = body.trim().split('\n').map(row => {
+          const tds = row.split('|').filter(c=>c.trim()).map(c=>{
+            const v = c.trim();
+            const cls = v.startsWith('+') ? ' class="up"' : v.startsWith('-') && !v.match(/^-\d+\.\d+\s*[A-Z]/) ? ' class="down"' : '';
+            return `<td${cls}>${v}</td>`;
+          }).join('');
+          return `<tr>${tds}</tr>`;
+        }).join('');
+        return `<table><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table>`;
+      })
+      // Code blocks
+      .replace(/```[\w]*\n?([\s\S]+?)```/g, '<pre><code>$1</code></pre>')
+      // Bold
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      // Italic
+      .replace(/\*(.+?)\*/g,'<em>$1</em>')
+      // Inline code
+      .replace(/`([^`]+)`/g,'<code>$1</code>')
+      // Headers
+      .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+      .replace(/^## (.+)$/gm,'<h3>$1</h3>')
+      // Bullets
+      .replace(/^[\*\-] (.+)$/gm,'<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>')
+      // Numbered
+      .replace(/^\d+\. (.+)$/gm,'<li>$1</li>')
+      // Paragraphs (double newlines)
+      .replace(/\n\n/g,'</p><p>')
+      // Single newlines
+      .replace(/\n/g,'<br>');
+
+    // Wrap in paragraph if not already wrapped
+    if (!s.startsWith('<')) s = `<p>${s}</p>`;
+    return s;
+  }
+
+  function appendUserMsg(text) {
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+
+    const row = document.createElement('div');
+    row.className = 'msg-row user';
+    row.innerHTML = `
+      <div class="msg-inner">
+        <div class="msg-header">
+          <div class="msg-avatar user">You</div>
+          <div class="msg-name">You</div>
+          <div class="msg-time">${timeStr()}</div>
+        </div>
+        <div class="msg-content user-content">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>
+      </div>`;
+    messagesEl.appendChild(row);
+    scroll();
+    return row;
+  }
+
+  function appendBotRow() {
+    const row = document.createElement('div');
+    row.className = 'msg-row bot';
+    row.innerHTML = `
+      <div class="msg-inner">
+        <div class="msg-header">
+          <div class="msg-avatar bot">B</div>
+          <div class="msg-name">BagsMCP</div>
+          <div class="msg-time">${timeStr()}</div>
+          <div class="msg-actions">
+            <button class="action-btn copy-btn">
+              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"/></svg>
+              Copy
+            </button>
+          </div>
+        </div>
+        <div class="msg-content" id="bot-content-${Date.now()}"></div>
+      </div>`;
+    messagesEl.appendChild(row);
+
+    const contentEl = row.querySelector('.msg-content');
+    row.querySelector('.copy-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(contentEl.innerText);
+      const btn = row.querySelector('.copy-btn');
+      btn.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg> Copied`;
+      setTimeout(() => btn.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"/></svg> Copy`, 1500);
+    });
+
+    return { row, contentEl };
+  }
+
+  function addToolPill(contentEl, tool, done = false) {
+    const labels = {
+      get_trending_tokens: '🔥 Fetching trending tokens',
+      get_token_info: '📊 Looking up token info',
+      get_token_price: '💰 Getting token price',
+      get_wallet_portfolio: '💼 Loading wallet portfolio',
+      get_recent_transactions: '📜 Fetching transactions',
+      prepare_swap: '🔄 Getting swap quote',
+    };
+    const pill = document.createElement('div');
+    pill.className = `tool-pill${done ? ' done' : ''}`;
+    pill.innerHTML = done
+      ? `✓ ${labels[tool] || tool}`
+      : `<span class="spin">⟳</span> ${labels[tool] || tool}...`;
+    pill.dataset.tool = tool;
+    contentEl.parentElement.insertBefore(pill, contentEl);
+    return pill;
+  }
+
+  function scroll() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+  const TOOL_NAMES = {
+    get_trending_tokens:'get_trending_tokens',get_token_info:'get_token_info',
+    get_token_price:'get_token_price',get_wallet_portfolio:'get_wallet_portfolio',
+    get_recent_transactions:'get_recent_transactions',prepare_swap:'prepare_swap'
+  };
+
+  async function sendMessage() {
+    const msg = inputEl.value.trim();
+    if (!msg || isLoading) return;
+
+    isLoading = true;
+    sendBtn.disabled = true;
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+
+    appendUserMsg(msg);
+    const { row, contentEl } = appendBotRow();
+    let rawText = '';
+    let cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    contentEl.appendChild(cursor);
+    scroll();
+
+    const activePills = {};
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, history }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Server error' }));
+        contentEl.innerHTML = `<span style="color:var(--red)">Error: ${err.error}</span>`;
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const event = JSON.parse(line.slice(6));
+
+          if (event.type === 'tool_start') {
+            const pill = addToolPill(contentEl, event.tool);
+            activePills[event.tool] = pill;
+            totalCalls++;
+            updateCallDisplay();
+            scroll();
+          } else if (event.type === 'tool_done') {
+            const pill = activePills[event.tool];
+            if (pill) { pill.className = 'tool-pill done'; pill.innerHTML = `✓ ${pill.innerHTML.replace(/<span[^>]*>.*?<\/span>\s*/,'')}`.replace('...',''); }
+          } else if (event.type === 'text') {
+            rawText += event.text;
+            cursor.remove();
+            contentEl.innerHTML = renderMarkdown(rawText);
+            contentEl.appendChild(cursor);
+            scroll();
+          } else if (event.type === 'done') {
+            history = event.history;
+            cursor.remove();
+            contentEl.innerHTML = renderMarkdown(rawText);
+            scroll();
+          } else if (event.type === 'error') {
+            cursor.remove();
+            contentEl.innerHTML = `<span style="color:var(--red)">Error: ${event.message}</span>`;
+          }
+        }
+      }
+    } catch (e) {
+      cursor.remove();
+      contentEl.innerHTML = `<span style="color:var(--red)">Connection error — is the server running?</span>`;
+    }
+
+    isLoading = false;
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+
+  inputEl.focus();
+
+  function toggleChatTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('chat-theme-btn');
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    btn.textContent = isDark ? '🌙 Dark' : '☀️ Light';
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  }
+  const saved = localStorage.getItem('theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    const btn = document.getElementById('chat-theme-btn');
+    if (btn) btn.textContent = saved === 'light' ? '🌙 Dark' : '☀️ Light';
+  }
+</script>
+</body>
+</html>

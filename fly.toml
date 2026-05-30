@@ -1,0 +1,47 @@
+# Fly.io deployment config
+# Deploy with: fly launch (first time) or fly deploy (updates)
+# Free tier: 3 shared VMs, 160GB bandwidth, no sleep
+
+app = "bags-mcp-server"
+primary_region = "ord"  # Chicago — change to nearest: ams, lhr, sin, syd
+
+[build]
+  [build.args]
+    NODE_ENV = "production"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
+
+# Secrets (set via CLI — never commit these):
+# fly secrets set BAGS_API_KEY=your_key
+# fly secrets set ANTHROPIC_API_KEY=sk-ant-...
+# fly secrets set MCP_AUTH_TOKEN=your_token
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [services.concurrency]
+    type = "requests"
+    hard_limit = 50
+    soft_limit = 25
+
+  [[services.http_checks]]
+    interval = "30s"
+    timeout = "10s"
+    path = "/health"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256

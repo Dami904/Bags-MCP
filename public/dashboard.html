@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BagsMCP Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117; --surface: #161b22; --surface2: #1f2937;
+      --border: #21262d; --border2: #30363d; --accent: #10b981; --accent2: #34d399;
+      --text: #e6edf3; --text2: #8b949e; --muted: #6e7681; --green: #3fb950; --red: #f85149; --yellow: #e3b341;
+    }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; border-bottom: 1px solid var(--border); }
+    .logo { font-size: 1rem; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-right { display: flex; align-items: center; gap: 1rem; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-label { font-size: 0.8rem; color: var(--muted); }
+    .back-link { color: var(--muted); font-size: 0.85rem; text-decoration: none; } .back-link:hover { color: var(--text); }
+
+    .main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+    .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .page-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+
+    /* STAT CARDS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .stat-value { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .stat-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; }
+    .accent-val { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    /* TWO COL */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .panel-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 1rem; }
+
+    /* TOOL BAR CHART */
+    .bar-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+    .bar-label { font-size: 0.8rem; font-family: monospace; color: var(--accent2); width: 180px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { flex: 1; background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
+    .bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width 0.6s ease; }
+    .bar-count { font-size: 0.75rem; color: var(--muted); width: 30px; text-align: right; flex-shrink: 0; }
+
+    /* RECENT CALLS */
+    .call-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+    .call-item:last-child { border-bottom: none; }
+    .call-tool { font-size: 0.82rem; font-family: monospace; color: var(--accent2); }
+    .call-time { font-size: 0.75rem; color: var(--muted); }
+
+    /* TRENDING TABLE */
+    .token-table { width: 100%; border-collapse: collapse; }
+    .token-table th { font-size: 0.75rem; color: var(--muted); text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.05em; }
+    .token-table td { padding: 0.55rem 0.5rem; border-bottom: 1px solid rgba(30,30,46,0.5); font-size: 0.83rem; }
+    .token-table tr:last-child td { border-bottom: none; }
+    .sym { font-weight: 700; color: var(--text); }
+    .up { color: var(--green); } .down { color: var(--red); } .flat { color: var(--muted); }
+
+    /* CONNECT BOX */
+    .connect-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+    .connect-box h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .connect-box p { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+    pre { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.78rem; line-height: 1.6; }
+    .copy-btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 0.35rem 0.85rem; font-size: 0.78rem; cursor: pointer; margin-top: 0.75rem; }
+    .copy-btn:hover { opacity: 0.85; }
+
+    .loading { color: var(--muted); font-size: 0.85rem; }
+    .refresh-note { font-size: 0.72rem; color: var(--muted); text-align: right; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="logo">BagsMCP Dashboard</span>
+  <div class="nav-right">
+    <div class="status-dot"></div>
+    <span class="status-label">Live</span>
+    <a href="/" class="back-link">← Landing page</a>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-title">Usage & Market Overview</div>
+  <div class="page-sub">Real-time MCP tool usage and live Bags.fm market data. Refreshes every 30s.</div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Tool Calls</div>
+      <div class="stat-value accent-val" id="total-calls">—</div>
+      <div class="stat-sub">since server start</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Most Used Tool</div>
+      <div class="stat-value" id="top-tool" style="font-size:1.1rem;padding-top:0.4rem">—</div>
+      <div class="stat-sub" id="top-tool-count"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Unique Tools Called</div>
+      <div class="stat-value accent-val" id="unique-tools">—</div>
+      <div class="stat-sub">of 6 available</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Server Uptime Since</div>
+      <div class="stat-value" id="started-at" style="font-size:0.9rem;padding-top:0.5rem">—</div>
+      <div class="stat-sub">UTC</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">Tool Call Breakdown</div>
+      <div id="tool-bars"><span class="loading">Loading...</span></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Recent Calls (last 10)</div>
+      <div id="recent-calls"><span class="loading">Loading...</span></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:2rem">
+    <div class="panel-title">Live Trending Tokens — Bags.fm</div>
+    <div id="trending-table"><span class="loading">Loading...</span></div>
+    <div class="refresh-note" id="trending-updated"></div>
+  </div>
+
+  <div class="connect-box">
+    <h3>Connect to Claude Desktop</h3>
+    <p>Paste this into <code>%APPDATA%\Claude\claude_desktop_config.json</code> and restart Claude Desktop.</p>
+    <pre id="config-snippet">{
+  "mcpServers": {
+    "bags": {
+      "url": "https://your-render-url.onrender.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_AUTH_TOKEN"
+      }
+    }
+  }
+}</pre>
+    <button class="copy-btn" onclick="copyConfig()">Copy config</button>
+  </div>
+</div>
+
+<script>
+  const tools = ['get_token_price','get_token_info','get_trending_tokens','get_wallet_portfolio','get_recent_transactions','prepare_swap'];
+
+  function timeAgo(iso) {
+    const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (secs < 60) return `${secs}s ago`;
+    if (secs < 3600) return `${Math.floor(secs/60)}m ago`;
+    return `${Math.floor(secs/3600)}h ago`;
+  }
+
+  async function loadMetrics() {
+    try {
+      const r = await fetch('/api/metrics');
+      const m = await r.json();
+
+      document.getElementById('total-calls').textContent = m.totalCalls.toLocaleString();
+      document.getElementById('unique-tools').textContent = Object.keys(m.toolCounts).length;
+      document.getElementById('started-at').textContent = new Date(m.startedAt).toLocaleString();
+
+      const sorted = Object.entries(m.toolCounts).sort((a,b) => b[1]-a[1]);
+      if (sorted.length) {
+        document.getElementById('top-tool').textContent = sorted[0][0].replace(/_/g,' ');
+        document.getElementById('top-tool-count').textContent = `${sorted[0][1]} calls`;
+      }
+
+      const maxVal = sorted.length ? sorted[0][1] : 1;
+      const allTools = tools.map(t => [t, m.toolCounts[t] ?? 0]);
+      allTools.sort((a,b) => b[1]-a[1]);
+      document.getElementById('tool-bars').innerHTML = allTools.map(([t,c]) => `
+        <div class="bar-row">
+          <div class="bar-label">${t}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${maxVal ? (c/maxVal*100) : 0}%"></div></div>
+          <div class="bar-count">${c}</div>
+        </div>`).join('');
+
+      const recent = (m.recentCalls || []).slice(0, 10);
+      document.getElementById('recent-calls').innerHTML = recent.length
+        ? recent.map(r => `<div class="call-item"><span class="call-tool">${r.tool}</span><span class="call-time">${timeAgo(r.timestamp)}</span></div>`).join('')
+        : '<span class="loading">No calls yet — try asking Claude a question!</span>';
+    } catch(e) {
+      document.getElementById('tool-bars').innerHTML = '<span class="loading">Could not load metrics</span>';
+    }
+  }
+
+  async function loadTrending() {
+    try {
+      const r = await fetch('/api/trending');
+      const tokens = await r.json();
+      const rows = tokens.slice(0,10).map((t, i) => {
+        const info = t.tokenInfo;
+        const change = info.stats24h?.priceChange;
+        const cls = change > 0 ? 'up' : change < 0 ? 'down' : 'flat';
+        const changeStr = change !== undefined ? `${change > 0 ? '+' : ''}${change.toFixed(2)}%` : '—';
+        const vol = info.stats24h ? (info.stats24h.buyVolume + info.stats24h.sellVolume) : 0;
+        return `<tr>
+          <td>${i+1}</td>
+          <td><span class="sym">${info.symbol}</span> <span style="color:var(--muted);font-size:0.75rem">${info.name}</span></td>
+          <td>$${info.usdPrice < 0.001 ? info.usdPrice.toFixed(8) : info.usdPrice.toFixed(4)}</td>
+          <td>$${info.mcap >= 1e6 ? (info.mcap/1e6).toFixed(2)+'M' : info.mcap.toLocaleString()}</td>
+          <td class="${cls}">${changeStr}</td>
+          <td>$${vol >= 1000 ? (vol/1000).toFixed(1)+'K' : vol.toFixed(0)}</td>
+          <td>${info.holderCount.toLocaleString()}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('trending-table').innerHTML = `
+        <table class="token-table">
+          <thead><tr><th>#</th><th>Token</th><th>Price</th><th>MCap</th><th>24h</th><th>Vol 24h</th><th>Holders</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+      document.getElementById('trending-updated').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+    } catch(e) {
+      document.getElementById('trending-table').innerHTML = '<span class="loading">Could not load trending data</span>';
+    }
+  }
+
+  function copyConfig() {
+    navigator.clipboard.writeText(document.getElementById('config-snippet').textContent);
+    event.target.textContent = 'Copied!';
+    setTimeout(() => event.target.textContent = 'Copy config', 1500);
+  }
+
+  loadMetrics();
+  loadTrending();
+  setInterval(loadMetrics, 30000);
+  setInterval(loadTrending, 30000);
+</script>
+</body>
+</html>
