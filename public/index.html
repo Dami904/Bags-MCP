@@ -454,18 +454,39 @@
     <div class="token-inner">
       <div class="token-copy">
         <h2>Earn fees with <em>$BMCP</em>.</h2>
-        <p>BagsMCP participates in Bags.fm's fee-sharing program. Every swap routed through the platform generates fees distributed to $BMCP holders.</p>
-        <p style="margin-top:12px">Not required to use BagsMCP — but it earns you a share of the platform's revenue.</p>
+        <p>BagsMCP is an AI research layer built on top of Bags.fm. Every time a user asks Claude to analyze a token, check a wallet, or get a swap quote — they're one step closer to trading on Bags.fm.</p>
+        <p style="margin-top:12px">That trading activity generates swap fees. Bags.fm distributes those fees to token creators and holders. <strong>$BMCP holders earn a share of every swap that flows through the Bags.fm ecosystem.</strong></p>
+        <p style="margin-top:12px;font-size:13.5px;color:var(--muted)">Not required to use BagsMCP — but it aligns your incentives with the platform's growth.</p>
+        <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text2)">
+            <span style="color:var(--accent);margin-top:2px">→</span>
+            <span><strong>AI drives discovery</strong> — users find tokens via BagsMCP they wouldn't have found manually</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text2)">
+            <span style="color:var(--accent);margin-top:2px">→</span>
+            <span><strong>Discovery drives trading</strong> — swap quotes and wallet analysis push users to act on Bags.fm</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text2)">
+            <span style="color:var(--accent);margin-top:2px">→</span>
+            <span><strong>Trading generates fees</strong> — fees flow back to $BMCP holders automatically</span>
+          </div>
+        </div>
       </div>
       <div class="token-card">
         <div class="token-symbol">$BMCP</div>
         <div class="token-name">The BagsMCP token on Bags.fm</div>
-        <div class="token-addr" id="token-addr">CONTRACT ADDRESS COMING SOON</div>
-        <a href="https://bags.fm" class="btn-main" target="_blank" style="width:100%;justify-content:center">View on Bags.fm →</a>
+        <div class="token-addr" id="token-addr" style="letter-spacing:0.04em;font-size:11px;color:var(--muted)">CONTRACT ADDRESS COMING SOON</div>
+        <a href="https://bags.fm" class="btn-main" target="_blank" style="width:100%;justify-content:center;margin-bottom:4px">View on Bags.fm →</a>
         <div class="token-perks">
-          <div class="perk"><div class="perk-dot"></div>Fee share from swap volume</div>
+          <div class="perk"><div class="perk-dot"></div>Fee share from all Bags.fm swap volume</div>
           <div class="perk"><div class="perk-dot"></div>Launched on Bags.fm bonding curve</div>
-          <div class="perk"><div class="perk-dot"></div>Part of the Bags.fm ecosystem</div>
+          <div class="perk"><div class="perk-dot"></div>AI-powered platform drives organic volume</div>
+          <div class="perk"><div class="perk-dot"></div>Holders benefit as BagsMCP usage grows</div>
+        </div>
+        <div id="bmcp-live" style="display:none;margin-top:16px;padding:10px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text2);text-align:left">
+          <div style="display:flex;justify-content:space-between"><span>Price</span><span id="bmcp-price" style="color:var(--accent);font-weight:600">—</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px"><span>MCap</span><span id="bmcp-mcap">—</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px"><span>24h</span><span id="bmcp-change">—</span></div>
         </div>
       </div>
     </div>
@@ -514,6 +535,21 @@
   fetch('/api/trending').then(r=>r.json()).then(tokens => {
     const el = document.getElementById('demo-token-count');
     if (el && Array.isArray(tokens)) el.textContent = `✓ get_trending_tokens — ${tokens.length} live tokens on Bags.fm`;
+
+    // Try to find $BMCP in live token data
+    if (Array.isArray(tokens)) {
+      const bmcp = tokens.find(t => t.tokenInfo?.symbol === 'BMCP');
+      if (bmcp) {
+        const info = bmcp.tokenInfo;
+        const change = info.stats24h?.priceChange;
+        document.getElementById('token-addr').textContent = bmcp.token;
+        document.getElementById('bmcp-price').textContent = '$' + info.usdPrice.toFixed(8);
+        document.getElementById('bmcp-mcap').textContent = '$' + (info.mcap >= 1e6 ? (info.mcap/1e6).toFixed(2)+'M' : info.mcap.toLocaleString());
+        document.getElementById('bmcp-change').textContent = change !== undefined ? (change > 0 ? '+' : '') + change.toFixed(2) + '%' : 'N/A';
+        document.getElementById('bmcp-change').style.color = change > 0 ? 'var(--green)' : change < 0 ? 'var(--red)' : 'var(--muted)';
+        document.getElementById('bmcp-live').style.display = 'block';
+      }
+    }
   }).catch(()=>{
     const el = document.getElementById('demo-token-count');
     if (el) el.textContent = '✓ get_trending_tokens — live Bags.fm data';
