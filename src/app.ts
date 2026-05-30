@@ -6,6 +6,7 @@ import { createServer } from "./server.js";
 import { getMetrics } from "./metrics.js";
 import { getTopTokens } from "./api/bags.js";
 import { chatStream } from "./chat.js";
+import { geminiStream } from "./gemini.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -39,26 +40,39 @@ export function createApp() {
     }
   });
 
-  // ── Chat (SSE streaming) ───────────────────────────────────────────────────
+  // ── Chat (SSE streaming — supports Claude and Gemini) ─────────────────────
   app.post("/api/chat", async (req: Request, res: Response) => {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      res.status(503).json({ error: "Chat not available — ANTHROPIC_API_KEY not configured." });
-      return;
-    }
-    const { message, history = [] } = req.body;
+    const { message, history = [], model = "claude", apiKey } = req.body;
     if (!message || typeof message !== "string") {
       res.status(400).json({ error: "message is required" });
       return;
     }
+
+    // Resolve API key: user-provided key takes priority, then server env var
+    const resolvedClaudeKey = model === "claude" ? (apiKey || process.env.ANTHROPIC_API_KEY) : null;
+    const resolvedGeminiKey = model === "gemini" ? (apiKey || process.env.GEMINI_API_KEY) : null;
+
+    if (model === "claude" && !resolvedClaudeKey) {
+      res.status(503).json({ error: "No Anthropic API key. Provide your own key in Settings or ask the admin to configure one." });
+      return;
+    }
+    if (model === "gemini" && !resolvedGeminiKey) {
+      res.status(503).json({ error: "No Gemini API key. Provide your own key in Settings." });
+      return;
+    }
+
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no"); // disable Nginx buffering if behind proxy
+    res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
+
     try {
-      await chatStream(message, history, (event) => {
-        res.write(`data: ${JSON.stringify(event)}\n\n`);
-      });
+      if (model === "gemini") {
+        await geminiStream(message, history, (event) => res.write(`data: ${JSON.stringify(event)}\n\n`), resolvedGeminiKey!);
+      } else {
+        await chatStream(message, history, (event) => res.write(`data: ${JSON.stringify(event)}\n\n`), resolvedClaudeKey!);
+      }
     } catch (err) {
       res.write(`data: ${JSON.stringify({ type: "error", message: err instanceof Error ? err.message : "Chat error" })}\n\n`);
     }

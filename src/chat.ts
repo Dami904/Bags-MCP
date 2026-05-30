@@ -3,7 +3,6 @@ import { getTopTokens, findToken, getSwapQuote } from "./api/bags.js";
 import { getWalletTokens, getRecentTransactions } from "./api/solana.js";
 import { recordToolCall } from "./metrics.js";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const SYSTEM = `You are BagsMCP, an AI assistant with live access to Bags.fm — a Solana token launch and trading platform.
 You have tools to fetch real-time token prices, market data, wallet portfolios, and swap quotes.
@@ -162,8 +161,11 @@ export type StreamEvent =
 export async function chatStream(
   userMessage: string,
   history: ChatMessage[],
-  emit: (event: StreamEvent) => void
+  emit: (event: StreamEvent) => void,
+  apiKey?: string
 ): Promise<void> {
+  const resolvedKey = apiKey || process.env.ANTHROPIC_API_KEY || "";
+  const client = new Anthropic({ apiKey: resolvedKey });
   const messages: Anthropic.MessageParam[] = [
     ...history.map(m => ({ role: m.role, content: m.content })),
     { role: "user", content: userMessage },

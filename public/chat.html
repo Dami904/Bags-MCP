@@ -146,11 +146,64 @@
     .hint-text kbd { background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px; padding: 1px 5px; font-family: inherit; font-size: 10.5px; }
 
     /* Mobile */
+    /* ── SETTINGS PANEL ───────────────────────────────────── */
+    .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; }
+    .settings-overlay.open { display: block; }
+    .settings-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 320px; background: var(--surface); border-left: 1px solid var(--border2); z-index: 201; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.25s ease; }
+    .settings-panel.open { transform: translateX(0); }
+    .settings-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .settings-header h3 { font-size: 14px; font-weight: 700; }
+    .close-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+    .close-btn:hover { background: var(--surface2); color: var(--text); }
+    .settings-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 24px; }
+    .settings-section { }
+    .settings-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; }
+
+    /* Model toggle */
+    .model-toggle { background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 4px; display: flex; gap: 4px; }
+    .model-btn { flex: 1; padding: 8px 12px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; background: transparent; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .model-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+    .model-btn.active.claude { color: #f59e0b; }
+    .model-btn.active.gemini { color: #4285f4; }
+    .model-indicator { width: 8px; height: 8px; border-radius: 50%; }
+    .claude-dot { background: #f59e0b; }
+    .gemini-dot { background: #4285f4; }
+    .model-active-label { margin-top: 8px; font-size: 12px; color: var(--muted); text-align: center; }
+    .model-active-label strong { color: var(--text2); }
+
+    /* API key inputs */
+    .key-group { }
+    .key-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .key-label span { font-size: 12.5px; font-weight: 600; color: var(--text2); }
+    .key-link { font-size: 11px; color: var(--accent2); text-decoration: none; }
+    .key-link:hover { text-decoration: underline; }
+    .key-input-wrap { position: relative; }
+    .key-input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 9px 36px 9px 12px; font-size: 12.5px; color: var(--text); font-family: 'SF Mono', Consolas, monospace; outline: none; transition: border-color 0.15s; }
+    .key-input:focus { border-color: var(--accent); }
+    .key-input::placeholder { color: var(--muted); font-family: inherit; }
+    .key-toggle-vis { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; }
+    .key-status { margin-top: 6px; font-size: 11.5px; }
+    .key-status.set { color: var(--accent2); }
+    .key-status.empty { color: var(--muted); }
+    .save-key-btn { width: 100%; margin-top: 8px; background: var(--accent-bg); color: var(--accent2); border: 1px solid var(--accent-border); border-radius: 7px; padding: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .save-key-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .clear-key-btn { width: 100%; margin-top: 6px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 7px; padding: 6px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+    .clear-key-btn:hover { border-color: var(--red); color: var(--red); }
+
+    .settings-note { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+    .settings-note strong { color: var(--text2); }
+
+    /* Settings gear btn in topbar */
+    .settings-gear { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 4px 9px; font-size: 13px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px; }
+    .settings-gear:hover { border-color: var(--accent); color: var(--text2); }
+    .active-model-chip { display: flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border); border-radius: 100px; padding: 3px 10px; font-size: 11.5px; color: var(--text2); }
+
     @media (max-width: 640px) {
       .sidebar { display: none; }
       .suggestion-grid { grid-template-columns: 1fr; }
       .msg-inner { padding: 6px 14px; }
       .welcome { padding: 32px 14px 16px; }
+      .settings-panel { width: 100%; }
     }
   </style>
 </head>
@@ -212,11 +265,15 @@
   <div class="topbar">
     <div class="topbar-left">
       <div class="live-badge"><div class="pulse"></div>Live Bags.fm data</div>
-      <span class="model-tag">claude-sonnet-4-6</span>
+      <div class="active-model-chip" id="active-model-chip">
+        <span id="active-model-dot" style="width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block"></span>
+        <span id="active-model-name">Claude</span>
+      </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:8px">
       <div style="font-size:12px;color:var(--muted)" id="tool-count-display"></div>
       <button class="theme-toggle" onclick="toggleChatTheme()" id="chat-theme-btn">🌙 Dark</button>
+      <button class="settings-gear" onclick="openSettings()">⚙ Settings</button>
     </div>
   </div>
 
@@ -259,6 +316,72 @@
         <span class="hint-text" id="char-count" style="color:var(--muted)"></span>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- SETTINGS OVERLAY + PANEL -->
+<div class="settings-overlay" id="settings-overlay" onclick="closeSettings()"></div>
+<div class="settings-panel" id="settings-panel">
+  <div class="settings-header">
+    <h3>⚙ Chat Settings</h3>
+    <button class="close-btn" onclick="closeSettings()">✕</button>
+  </div>
+  <div class="settings-body">
+
+    <!-- Model toggle -->
+    <div class="settings-section">
+      <div class="settings-section-title">AI Model</div>
+      <div class="model-toggle">
+        <button class="model-btn claude active" id="btn-claude" onclick="switchModel('claude')">
+          <span class="model-indicator claude-dot"></span> Claude
+        </button>
+        <button class="model-btn gemini" id="btn-gemini" onclick="switchModel('gemini')">
+          <span class="model-indicator gemini-dot"></span> Gemini
+        </button>
+      </div>
+      <div class="model-active-label" id="model-active-label">Using <strong>Claude Sonnet 4.6</strong></div>
+    </div>
+
+    <!-- Claude key -->
+    <div class="settings-section" id="claude-key-section">
+      <div class="settings-section-title">Anthropic API Key</div>
+      <div class="key-group">
+        <div class="key-label">
+          <span>Your key (optional)</span>
+          <a class="key-link" href="https://console.anthropic.com/settings/keys" target="_blank">Get key →</a>
+        </div>
+        <div class="key-input-wrap">
+          <input class="key-input" type="password" id="claude-key-input" placeholder="sk-ant-..." />
+          <button class="key-toggle-vis" onclick="toggleVis('claude-key-input', this)">👁</button>
+        </div>
+        <div class="key-status" id="claude-key-status">Using server key</div>
+        <button class="save-key-btn" onclick="saveKey('claude')">Save key</button>
+        <button class="clear-key-btn" onclick="clearKey('claude')">Clear saved key</button>
+      </div>
+    </div>
+
+    <!-- Gemini key -->
+    <div class="settings-section" id="gemini-key-section" style="display:none">
+      <div class="settings-section-title">Google Gemini API Key</div>
+      <div class="key-group">
+        <div class="key-label">
+          <span>Your key (free)</span>
+          <a class="key-link" href="https://aistudio.google.com/app/apikey" target="_blank">Get free key →</a>
+        </div>
+        <div class="key-input-wrap">
+          <input class="key-input" type="password" id="gemini-key-input" placeholder="AIza..." />
+          <button class="key-toggle-vis" onclick="toggleVis('gemini-key-input', this)">👁</button>
+        </div>
+        <div class="key-status" id="gemini-key-status">No key saved</div>
+        <button class="save-key-btn" onclick="saveKey('gemini')">Save key</button>
+        <button class="clear-key-btn" onclick="clearKey('gemini')">Clear saved key</button>
+      </div>
+    </div>
+
+    <div class="settings-note">
+      <strong>Privacy:</strong> Your API keys are stored only in your browser (localStorage) and sent directly to the server over HTTPS for each request. They are never logged or stored on the server.
+    </div>
+
   </div>
 </div>
 
@@ -457,7 +580,7 @@
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, history }),
+        body: JSON.stringify({ message: msg, history, model: currentModel, apiKey: getActiveKey() }),
       });
 
       if (!res.ok) {
@@ -519,6 +642,77 @@
   }
 
   inputEl.focus();
+
+  // ── SETTINGS ───────────────────────────────────────────────────────────────
+  let currentModel = localStorage.getItem('bagsmcp-model') || 'claude';
+
+  function openSettings() {
+    document.getElementById('settings-overlay').classList.add('open');
+    document.getElementById('settings-panel').classList.add('open');
+    refreshKeyStatuses();
+  }
+  function closeSettings() {
+    document.getElementById('settings-overlay').classList.remove('open');
+    document.getElementById('settings-panel').classList.remove('open');
+  }
+
+  function switchModel(m) {
+    currentModel = m;
+    localStorage.setItem('bagsmcp-model', m);
+    document.getElementById('btn-claude').classList.toggle('active', m === 'claude');
+    document.getElementById('btn-gemini').classList.toggle('active', m === 'gemini');
+    document.getElementById('claude-key-section').style.display = m === 'claude' ? '' : 'none';
+    document.getElementById('gemini-key-section').style.display = m === 'gemini' ? '' : 'none';
+    const label = document.getElementById('model-active-label');
+    label.innerHTML = m === 'claude' ? 'Using <strong>Claude Sonnet 4.6</strong>' : 'Using <strong>Gemini 1.5 Flash</strong>';
+    // Update topbar chip
+    const dot = document.getElementById('active-model-dot');
+    const name = document.getElementById('active-model-name');
+    dot.style.background = m === 'claude' ? '#f59e0b' : '#4285f4';
+    name.textContent = m === 'claude' ? 'Claude' : 'Gemini';
+  }
+
+  function saveKey(m) {
+    const val = document.getElementById(`${m}-key-input`).value.trim();
+    if (!val) return;
+    localStorage.setItem(`bagsmcp-${m}-key`, val);
+    refreshKeyStatuses();
+    document.getElementById(`${m}-key-input`).value = '';
+    const btn = document.querySelector(`#${m}-key-section .save-key-btn`);
+    btn.textContent = '✓ Saved!';
+    setTimeout(() => btn.textContent = 'Save key', 1500);
+  }
+
+  function clearKey(m) {
+    localStorage.removeItem(`bagsmcp-${m}-key`);
+    document.getElementById(`${m}-key-input`).value = '';
+    refreshKeyStatuses();
+  }
+
+  function toggleVis(id, btn) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+  }
+
+  function refreshKeyStatuses() {
+    const claudeKey = localStorage.getItem('bagsmcp-claude-key');
+    const geminiKey = localStorage.getItem('bagsmcp-gemini-key');
+    const cs = document.getElementById('claude-key-status');
+    const gs = document.getElementById('gemini-key-status');
+    cs.className = 'key-status ' + (claudeKey ? 'set' : 'empty');
+    cs.textContent = claudeKey ? `✓ Custom key set (${claudeKey.slice(0,12)}...)` : 'Using server key (if available)';
+    gs.className = 'key-status ' + (geminiKey ? 'set' : 'empty');
+    gs.textContent = geminiKey ? `✓ Custom key set (${geminiKey.slice(0,12)}...)` : 'No key saved — required for Gemini';
+  }
+
+  function getActiveKey() {
+    return localStorage.getItem(`bagsmcp-${currentModel}-key`) || null;
+  }
+
+  // Init model from saved preference
+  switchModel(currentModel);
+  refreshKeyStatuses();
 
   function toggleChatTheme() {
     const html = document.documentElement;
