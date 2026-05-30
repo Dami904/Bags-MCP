@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, FunctionDeclaration, SchemaType, Tool } from "@google/generative-ai";
-import { getTopTokens, findToken, getSwapQuote } from "./api/bags.js";
+import { getTopTokens, findToken, getSwapQuote, getRecentlyLaunched } from "./api/bags.js";
 import { getWalletTokens, getRecentTransactions } from "./api/solana.js";
 import { recordToolCall } from "./metrics.js";
 import type { StreamEvent, ChatMessage } from "./chat.js";
@@ -39,6 +39,11 @@ const TOOL_DEFS: FunctionDeclaration[] = [
     name: "prepare_swap",
     description: "Get a swap quote on Bags.fm. Returns estimated output and price impact.",
     parameters: { type: SchemaType.OBJECT, properties: { from_mint: { type: SchemaType.STRING, description: "Input token mint address" }, to_mint: { type: SchemaType.STRING, description: "Output token mint address" }, amount_lamports: { type: SchemaType.NUMBER, description: "Amount in smallest unit" } }, required: ["from_mint", "to_mint", "amount_lamports"] },
+  },
+  {
+    name: "get_recently_launched",
+    description: "Get the most recently launched tokens on Bags.fm sorted by launch date. Use this when asked about new tokens, recent launches, or tokens deployed in the last N hours.",
+    parameters: { type: SchemaType.OBJECT, properties: { limit: { type: SchemaType.NUMBER, description: "Number of tokens to return (default 10)" } } },
   },
 ];
 
@@ -83,6 +88,15 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
         if (!txs.length) return "No recent transactions found.";
         return txs.map((tx, i) => `${i + 1}. [${tx.status.toUpperCase()}] ${new Date(tx.timestamp * 1000).toISOString()} | ${tx.signature.slice(0, 24)}...`).join("\n");
       }
+      case "get_recently_launched": {
+        const tokens = await getRecentlyLaunched((args.limit as number) ?? 10);
+        if (!tokens.length) return "No recently launched tokens found.";
+        return tokens.map((t, i) => {
+          const info = t.tokenInfo;
+          const age = Math.round((Date.now() - new Date(info.createdAt).getTime()) / 1000 / 60);
+          return `${i + 1}. ${info.symbol} (${info.name}) | $${info.usdPrice.toFixed(8)} | MCap: $${info.mcap >= 1e6 ? (info.mcap / 1e6).toFixed(2) + "M" : info.mcap.toLocaleString()} | Launched: ${age < 60 ? age + "m ago" : Math.round(age / 60) + "h ago"}`;
+        }).join("\n");
+      }
       case "prepare_swap": {
         const quote = await getSwapQuote(args.from_mint as string, args.to_mint as string, args.amount_lamports as number);
         if (!quote) return "Could not get quote — no liquidity pool found.";
@@ -116,10 +130,12 @@ export async function geminiStream(
   const chat = model.startChat({ history: geminiHistory });
   let finalText = "";
 
-  // Agentic tool loop
+  // Agentic tool loop — max 5 iterations to avoid Render 30s timeout
   let response = await chat.sendMessage(userMessage);
+  let iterations = 0;
 
-  while (true) {
+  while (iterations < 5) {
+    iterations++;
     const candidate = response.response.candidates?.[0];
     if (!candidate) break;
 
@@ -139,6 +155,11 @@ export async function geminiStream(
     }
 
     response = await chat.sendMessage(toolResults as any);
+  }
+
+  if (!finalText) {
+    finalText = response.response.candidates?.[0]?.content.parts.find(p => p.text)?.text
+      ?? "I don't have a tool for that specific query. Try asking about trending tokens, a token's price/info, or a wallet portfolio.";
   }
 
   // Stream final text word by word

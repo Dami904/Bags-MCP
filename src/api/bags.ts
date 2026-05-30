@@ -97,6 +97,14 @@ export async function findToken(query: string): Promise<BagsToken | null> {
   );
 }
 
+export async function getRecentlyLaunched(limit = 10): Promise<BagsToken[]> {
+  const tokens = await getTopTokens(200);
+  return tokens
+    .filter(t => t.tokenInfo.createdAt)
+    .sort((a, b) => new Date(b.tokenInfo.createdAt).getTime() - new Date(a.tokenInfo.createdAt).getTime())
+    .slice(0, limit);
+}
+
 export async function getSwapQuote(
   fromMint: string,
   toMint: string,

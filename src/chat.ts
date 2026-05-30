@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { getTopTokens, findToken, getSwapQuote } from "./api/bags.js";
+import { getTopTokens, findToken, getSwapQuote, getRecentlyLaunched } from "./api/bags.js";
 import { getWalletTokens, getRecentTransactions } from "./api/solana.js";
 import { recordToolCall } from "./metrics.js";
 
@@ -85,6 +85,16 @@ const TOOL_DEFS: Anthropic.Tool[] = [
       required: ["from_mint", "to_mint", "amount_lamports"],
     },
   },
+  {
+    name: "get_recently_launched",
+    description: "Get the most recently launched tokens on Bags.fm, sorted by launch date. Use this when asked about new tokens, recent launches, or tokens deployed in the last N hours.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        limit: { type: "number", description: "Number of tokens to return (default 10)" },
+      },
+    },
+  },
 ];
 
 async function executeTool(name: string, input: Record<string, unknown>): Promise<string> {
@@ -132,6 +142,15 @@ async function executeTool(name: string, input: Record<string, unknown>): Promis
         const txs = await getRecentTransactions(input.address as string, (input.limit as number) ?? 10);
         if (!txs.length) return "No recent transactions found.";
         return txs.map((tx, i) => `${i + 1}. [${tx.status.toUpperCase()}] ${new Date(tx.timestamp * 1000).toISOString()} | ${tx.signature.slice(0, 24)}...`).join("\n");
+      }
+      case "get_recently_launched": {
+        const tokens = await getRecentlyLaunched((input.limit as number) ?? 10);
+        if (!tokens.length) return "No recently launched tokens found.";
+        return tokens.map((t, i) => {
+          const info = t.tokenInfo;
+          const age = Math.round((Date.now() - new Date(info.createdAt).getTime()) / 1000 / 60);
+          return `${i + 1}. ${info.symbol} (${info.name}) | $${info.usdPrice.toFixed(8)} | MCap: $${info.mcap >= 1e6 ? (info.mcap / 1e6).toFixed(2) + "M" : info.mcap.toLocaleString()} | Launched: ${age < 60 ? age + "m ago" : Math.round(age / 60) + "h ago"}`;
+        }).join("\n");
       }
       case "prepare_swap": {
         const quote = await getSwapQuote(input.from_mint as string, input.to_mint as string, input.amount_lamports as number);
