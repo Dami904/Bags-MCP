@@ -20,3 +20,9 @@ services:
         sync: false
       - key: MCP_AUTH_TOKEN
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: UPSTASH_REDIS_URL
+        sync: false
+      - key: UPSTASH_REDIS_TOKEN
+        sync: false
