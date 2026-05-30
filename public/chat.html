@@ -63,8 +63,10 @@
     @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
     .model-tag { font-size: 11.5px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; }
     [data-theme="light"] { --bg:#f7f6f2; --sidebar:#eceae4; --surface:#ffffff; --surface2:#f1f0ec; --border:#e4e2db; --border2:#d1cfc7; --accent:#10b981; --accent2:#059669; --accent-bg:rgba(16,185,129,0.08); --accent-border:rgba(16,185,129,0.2); --text:#0f1a16; --text2:#3d4f47; --muted:#7a8c84; --user-bubble:#e8f5f0; --user-border:#10b981; }
-    .theme-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 3px 9px; font-size: 11.5px; cursor: pointer; transition: all 0.15s; }
-    .theme-toggle:hover { border-color: var(--accent); color: var(--text2); }
+    .theme-toggle { display:inline-flex; align-items:center; gap:6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); border-radius: 20px; padding: 4px 12px 4px 7px; font-size: 12px; cursor: pointer; transition: all 0.15s; font-weight:500; }
+    .theme-toggle:hover { border-color: var(--accent); }
+    .theme-dot { width:13px; height:13px; border-radius:50%; background:#f59e0b; flex-shrink:0; transition: background 0.2s; }
+    [data-theme="dark"] .theme-dot { background:#818cf8; }
 
     /* ── MESSAGES ──────────────────────────────────────── */
     .messages { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
@@ -272,7 +274,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <div style="font-size:12px;color:var(--muted)" id="tool-count-display"></div>
-      <button class="theme-toggle" onclick="toggleChatTheme()" id="chat-theme-btn">🌙 Dark</button>
+      <button class="theme-toggle" onclick="toggleChatTheme()" id="chat-theme-btn"><span class="theme-dot"></span><span id="chat-theme-label">Light</span></button>
       <button class="settings-gear" onclick="openSettings()">⚙ Settings</button>
     </div>
   </div>
@@ -721,19 +723,21 @@
   switchModel(currentModel);
   refreshKeyStatuses();
 
+  function applyThemeLabel(theme) {
+    const label = document.getElementById('chat-theme-label');
+    if (label) label.textContent = theme === 'dark' ? 'Dark' : 'Light';
+  }
   function toggleChatTheme() {
-    const html = document.documentElement;
-    const btn = document.getElementById('chat-theme-btn');
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    btn.textContent = isDark ? '🌙 Dark' : '☀️ Light';
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    applyThemeLabel(next);
+    localStorage.setItem('theme', next);
   }
   const saved = localStorage.getItem('theme');
   if (saved) {
     document.documentElement.setAttribute('data-theme', saved);
-    const btn = document.getElementById('chat-theme-btn');
-    if (btn) btn.textContent = saved === 'light' ? '🌙 Dark' : '☀️ Light';
+    applyThemeLabel(saved);
   }
 </script>
 </body>

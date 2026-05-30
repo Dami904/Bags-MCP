@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, FunctionDeclaration, SchemaType, Tool } from "@google/generative-ai";
-import { getTopTokens, findToken, getSwapQuote, getRecentlyLaunched } from "./api/bags.js";
+import { getTopTokens, findToken, getSwapQuote, getRecentlyLaunched, getTokenMap } from "./api/bags.js";
 import { getWalletTokens, getRecentTransactions } from "./api/solana.js";
 import { recordToolCall } from "./metrics.js";
 import type { StreamEvent, ChatMessage } from "./chat.js";
@@ -79,9 +79,23 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
         ].filter(Boolean).join("\n");
       }
       case "get_wallet_portfolio": {
-        const tokens = await getWalletTokens(args.address as string);
-        if (!tokens.length) return `No tokens found for wallet ${args.address}`;
-        return [`Wallet: ${args.address}`, `Found ${tokens.length} token accounts:`, ...tokens.slice(0, 20).map((t, i) => `${i + 1}. Mint: ${t.mint} | Amount: ${t.amount}`)].join("\n");
+        const [walletTokens, tokenMap] = await Promise.all([
+          getWalletTokens(args.address as string),
+          getTokenMap(),
+        ]);
+        if (!walletTokens.length) return `No tokens found for wallet ${args.address}`;
+        const bagsHoldings = walletTokens
+          .map(t => ({ ...t, bags: tokenMap.get(t.mint.toLowerCase()) }))
+          .filter(t => t.bags);
+        if (!bagsHoldings.length) return `Wallet ${args.address} holds no Bags.fm tokens.`;
+        return [
+          `Wallet: ${args.address}`,
+          `Found ${bagsHoldings.length} Bags.fm token(s):`,
+          ...bagsHoldings.map((t, i) => {
+            const info = t.bags!.tokenInfo;
+            return `${i + 1}. ${info.symbol} (${info.name}) | Amount: ${t.amount} | Price: $${info.usdPrice.toFixed(8)} | MCap: $${info.mcap >= 1e6 ? (info.mcap / 1e6).toFixed(2) + "M" : info.mcap.toLocaleString()}`;
+          }),
+        ].join("\n");
       }
       case "get_recent_transactions": {
         const txs = await getRecentTransactions(args.address as string, (args.limit as number) ?? 10);

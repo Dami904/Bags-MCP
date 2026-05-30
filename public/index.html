@@ -66,8 +66,10 @@
     .topbar-nav a { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 13.5px; padding: 5px 10px; border-radius: 5px; transition: all 0.15s; }
     .topbar-nav a:hover { color: #fff; background: rgba(255,255,255,0.08); }
     .topbar-right { display: flex; align-items: center; gap: 10px; }
-    .theme-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px; }
-    .theme-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .theme-btn { display:inline-flex; align-items:center; gap:6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); color: rgba(255,255,255,0.85); border-radius: 20px; padding: 4px 12px 4px 7px; font-size: 12px; cursor: pointer; transition: all 0.15s; font-weight:500; }
+    .theme-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+    .theme-dot { width:13px; height:13px; border-radius:50%; background:#f59e0b; flex-shrink:0; transition: background 0.2s; }
+    [data-theme="dark"] .theme-dot { background:#818cf8; }
     .cta-btn { background: var(--accent); color: #fff; border: none; border-radius: 7px; padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.15s; }
     .cta-btn:hover { background: var(--accent2); color: #0d1117; }
 
@@ -245,7 +247,7 @@
   </div>
   <div class="topbar-right">
     <button class="theme-btn" onclick="toggleTheme()" id="theme-toggle">
-      <span id="theme-icon">🌙</span> Dark
+      <span class="theme-dot"></span><span id="theme-label">Light</span>
     </button>
     <a href="/chat" class="cta-btn">Try live →</a>
   </div>
@@ -491,10 +493,8 @@
   // ── Theme ─────────────────────────────────────────────────
   function applyTheme(t) {
     document.documentElement.setAttribute('data-theme', t);
-    const btn = document.getElementById('theme-toggle');
-    const icon = document.getElementById('theme-icon');
-    if (t === 'dark') { icon.textContent = '☀️'; btn.childNodes[1].textContent = ' Light'; }
-    else { icon.textContent = '🌙'; btn.childNodes[1].textContent = ' Dark'; }
+    const label = document.getElementById('theme-label');
+    if (label) label.textContent = t === 'dark' ? 'Dark' : 'Light';
     localStorage.setItem('theme', t);
   }
   function toggleTheme() {

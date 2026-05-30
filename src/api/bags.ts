@@ -77,15 +77,20 @@ export interface TokenStats {
 
 // ─── API calls ─────────────────────────────────────────────────────────────────
 
-export async function getTopTokens(limit = 20): Promise<BagsToken[]> {
-  const tokens: BagsToken[] = await sdk.bagsApiClient.get(
-    "/token-launch/top-tokens/lifetime-fees"
-  );
+// Always fetch every live token from Bags.fm — no artificial limit
+export async function getAllTokens(): Promise<BagsToken[]> {
+  return sdk.bagsApiClient.get("/token-launch/top-tokens/lifetime-fees");
+}
+
+// For display (trending list) — still accepts a display limit
+export async function getTopTokens(limit = 10): Promise<BagsToken[]> {
+  const tokens = await getAllTokens();
   return tokens.slice(0, limit);
 }
 
+// Search across every Bags.fm token
 export async function findToken(query: string): Promise<BagsToken | null> {
-  const tokens = await getTopTokens(166);
+  const tokens = await getAllTokens();
   const q = query.toLowerCase();
   return (
     tokens.find(
@@ -97,8 +102,15 @@ export async function findToken(query: string): Promise<BagsToken | null> {
   );
 }
 
+// Build a mint-address → token map for O(1) wallet lookups
+export async function getTokenMap(): Promise<Map<string, BagsToken>> {
+  const tokens = await getAllTokens();
+  return new Map(tokens.map(t => [t.token.toLowerCase(), t]));
+}
+
+// Recently launched — sorted by createdAt across all tokens
 export async function getRecentlyLaunched(limit = 10): Promise<BagsToken[]> {
-  const tokens = await getTopTokens(200);
+  const tokens = await getAllTokens();
   return tokens
     .filter(t => t.tokenInfo.createdAt)
     .sort((a, b) => new Date(b.tokenInfo.createdAt).getTime() - new Date(a.tokenInfo.createdAt).getTime())
