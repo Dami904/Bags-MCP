@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getTopTokens, findToken, getSwapQuote } from "../api/bags.js";
+import { getTopTokens, findToken, getSwapQuote, getRecentlyLaunched } from "../api/bags.js";
 import { getWalletTokens, getRecentTransactions } from "../api/solana.js";
 import { buildErrorResult, formatToolError } from "../utils/errors.js";
 import { recordToolCall } from "../metrics.js";
@@ -184,6 +184,33 @@ export function registerTools(server: McpServer) {
           ``,
           `To execute: sign the swap transaction in your Solana wallet.`,
         ].join("\n");
+        return { content: [{ type: "text", text }] };
+      } catch (err) {
+        return buildErrorResult(formatToolError(err));
+      }
+    }
+  );
+
+  server.tool(
+    "get_recently_launched",
+    "Get the most recently launched tokens on Bags.fm, sorted by launch date. Use for questions about new tokens or recent launches.",
+    {
+      limit: z.number().min(1).max(50).default(10).describe("Number of tokens to return (max 50)"),
+    },
+    async ({ limit }) => {
+      await recordToolCall("get_recently_launched");
+      try {
+        const tokens = await getRecentlyLaunched(limit);
+        if (tokens.length === 0) {
+          return { content: [{ type: "text", text: "No recently launched tokens found." }] };
+        }
+        const lines = tokens.map((t, idx) => {
+          const i = t.tokenInfo;
+          const age = Math.round((Date.now() - new Date(i.createdAt).getTime()) / 1000 / 60);
+          const ageStr = age < 60 ? `${age}m ago` : `${Math.round(age / 60)}h ago`;
+          return `${idx + 1}. ${i.symbol} (${i.name}) — $${i.usdPrice.toFixed(8)} | MCap: $${i.mcap >= 1e6 ? (i.mcap / 1e6).toFixed(2) + "M" : i.mcap.toLocaleString()} | Launched: ${ageStr}`;
+        });
+        const text = ["Recently Launched Tokens on Bags.fm", ...lines].join("\n");
         return { content: [{ type: "text", text }] };
       } catch (err) {
         return buildErrorResult(formatToolError(err));
