@@ -98,23 +98,23 @@
 
 <div class="main">
   <div class="page-title">Usage & Market Overview</div>
-  <div class="page-sub">Real-time MCP tool usage and live Bags.fm market data. Refreshes every 30s.</div>
+  <div class="page-sub">All public MCP tool calls and chat requests — totalled globally. Refreshes every 10s.</div>
 
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-label">Total Tool Calls</div>
+      <div class="stat-label">Total Requests</div>
       <div class="stat-value accent-val" id="total-calls">—</div>
-      <div class="stat-sub">since server start</div>
+      <div class="stat-sub">tool calls + chat requests</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Chat Requests</div>
+      <div class="stat-value accent-val" id="chat-calls">—</div>
+      <div class="stat-sub">via /chat page</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Most Used Tool</div>
       <div class="stat-value" id="top-tool" style="font-size:1.1rem;padding-top:0.4rem">—</div>
       <div class="stat-sub" id="top-tool-count"></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Unique Tools Called</div>
-      <div class="stat-value accent-val" id="unique-tools">—</div>
-      <div class="stat-sub">of 7 available</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Server Uptime Since</div>
@@ -152,15 +152,12 @@
   </div>
 
   <div class="connect-box">
-    <h3>Connect to Claude Desktop</h3>
-    <p>Paste this into <code>%APPDATA%\Claude\claude_desktop_config.json</code> and restart Claude Desktop.</p>
+    <h3>Connect to Claude Desktop — Free &amp; Public</h3>
+    <p>No token required. Paste this into <code>%APPDATA%\Claude\claude_desktop_config.json</code> (Mac: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>) and restart Claude Desktop.</p>
     <pre id="config-snippet">{
   "mcpServers": {
     "bags": {
-      "url": "https://bags-mcp.onrender.com/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_MCP_AUTH_TOKEN"
-      }
+      "url": "https://bags-mcp.onrender.com/mcp"
     }
   }
 }</pre>
@@ -184,10 +181,16 @@
       const m = await r.json();
 
       document.getElementById('total-calls').textContent = m.totalCalls.toLocaleString();
-      document.getElementById('unique-tools').textContent = Object.keys(m.toolCounts).length;
       document.getElementById('started-at').textContent = new Date(m.startedAt).toLocaleString();
 
-      const sorted = Object.entries(m.toolCounts).sort((a,b) => b[1]-a[1]);
+      // Chat requests count
+      const chatCount = m.toolCounts['chat_request'] ?? 0;
+      document.getElementById('chat-calls').textContent = chatCount.toLocaleString();
+
+      // Top tool (excluding chat_request pseudo-tool)
+      const sorted = Object.entries(m.toolCounts)
+        .filter(([k]) => k !== 'chat_request')
+        .sort((a,b) => b[1]-a[1]);
       if (sorted.length) {
         document.getElementById('top-tool').textContent = sorted[0][0].replace(/_/g,' ');
         document.getElementById('top-tool-count').textContent = `${sorted[0][1]} calls`;
@@ -207,8 +210,11 @@
       document.getElementById('recent-calls').innerHTML = recent.length
         ? recent.map(r => {
             const modelColor = r.model === 'gemini' ? '#4285f4' : r.model === 'claude' ? '#f59e0b' : '#6e7681';
-            const badge = `<span style="font-size:0.7rem;background:${modelColor}22;color:${modelColor};border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:600">${r.model || 'unknown'}</span>`;
-            return `<div class="call-item"><span class="call-tool">${r.tool}${badge}</span><span class="call-time">${timeAgo(r.timestamp)}</span></div>`;
+            const modelBadge = `<span style="font-size:0.7rem;background:${modelColor}22;color:${modelColor};border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:600">${r.model || 'unknown'}</span>`;
+            const typeBadge = r.type === 'chat'
+              ? `<span style="font-size:0.65rem;background:#7c3aed22;color:#7c3aed;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:600">chat</span>`
+              : '';
+            return `<div class="call-item"><span class="call-tool">${r.tool}${modelBadge}${typeBadge}</span><span class="call-time">${timeAgo(r.timestamp)}</span></div>`;
           }).join('')
         : '<span class="loading">No calls yet — try the chat!</span>';
 
@@ -296,7 +302,7 @@
 
   loadMetrics();
   loadTrending();
-  setInterval(loadMetrics, 30000);
+  setInterval(loadMetrics, 10000);
   setInterval(loadTrending, 30000);
 </script>
 </body>

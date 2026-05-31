@@ -3,7 +3,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer } from "./server.js";
-import { getMetrics } from "./metrics.js";
+import { getMetrics, recordToolCall } from "./metrics.js";
 import { getTopTokens } from "./api/bags.js";
 import { chatStream } from "./chat.js";
 import { geminiStream } from "./gemini.js";
@@ -60,6 +60,9 @@ export function createApp() {
       res.status(503).json({ error: "No Gemini API key. Provide your own key in Settings." });
       return;
     }
+
+    // Record every chat request (fire-and-forget, don't block the stream)
+    recordToolCall("chat_request", model, "chat").catch(() => {});
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
