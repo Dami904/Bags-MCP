@@ -153,15 +153,41 @@
 
   <div class="connect-box">
     <h3>Connect to Claude Desktop — Free &amp; Public</h3>
-    <p>No token required. Paste this into <code>%APPDATA%\Claude\claude_desktop_config.json</code> (Mac: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>) and restart Claude Desktop.</p>
-    <pre id="config-snippet">{
+    <p style="margin-bottom:1rem">No token required. Add to your Claude Desktop config and restart.</p>
+
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
+      <button class="copy-btn" id="tab-a" onclick="switchTab('a')" style="opacity:1">Option A — mcp-remote</button>
+      <button class="copy-btn" id="tab-b" onclick="switchTab('b')" style="opacity:0.45;background:var(--surface2);color:var(--text2)">Option B — Direct URL</button>
+    </div>
+
+    <div id="tab-a-content">
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem">Works with all versions of Claude Desktop. Requires Node.js (already installed if you use Claude Code).</p>
+      <p style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem">Config file: <code>%APPDATA%\Claude\claude_desktop_config.json</code> &nbsp;·&nbsp; Mac: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+      <pre id="config-snippet-a">{
+  "mcpServers": {
+    "bags": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://bags-mcp.onrender.com/mcp"]
+    }
+  }
+}</pre>
+      <button class="copy-btn" onclick="copySnippet('a')">Copy config</button>
+    </div>
+
+    <div id="tab-b-content" style="display:none">
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem">Works on newer versions of Claude Desktop. If you see <em>"not valid MCP server configurations"</em>, use Option A instead.</p>
+      <p style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem">Config file: <code>%APPDATA%\Claude\claude_desktop_config.json</code> &nbsp;·&nbsp; Mac: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+      <pre id="config-snippet-b">{
   "mcpServers": {
     "bags": {
       "url": "https://bags-mcp.onrender.com/mcp"
     }
   }
 }</pre>
-    <button class="copy-btn" onclick="copyConfig()">Copy config</button>
+      <button class="copy-btn" onclick="copySnippet('b')">Copy config</button>
+    </div>
+
+    <p style="font-size:0.78rem;color:var(--muted);margin-top:0.75rem"><strong>Cursor:</strong> Settings → MCP → add server with URL <code>https://bags-mcp.onrender.com/mcp</code></p>
   </div>
 </div>
 
@@ -281,8 +307,19 @@
     }
   }
 
-  function copyConfig() {
-    navigator.clipboard.writeText(document.getElementById('config-snippet').textContent);
+  function switchTab(tab) {
+    const isA = tab === 'a';
+    document.getElementById('tab-a-content').style.display = isA ? '' : 'none';
+    document.getElementById('tab-b-content').style.display = isA ? 'none' : '';
+    document.getElementById('tab-a').style.opacity = isA ? '1' : '0.45';
+    document.getElementById('tab-b').style.opacity = isA ? '0.45' : '1';
+    document.getElementById('tab-a').style.background = isA ? '' : 'var(--surface2)';
+    document.getElementById('tab-b').style.background = isA ? 'var(--surface2)' : '';
+    document.getElementById('tab-a').style.color = isA ? '' : 'var(--text2)';
+    document.getElementById('tab-b').style.color = isA ? 'var(--text2)' : '';
+  }
+  function copySnippet(tab) {
+    navigator.clipboard.writeText(document.getElementById('config-snippet-' + tab).textContent);
     event.target.textContent = 'Copied!';
     setTimeout(() => event.target.textContent = 'Copy config', 1500);
   }

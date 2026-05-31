@@ -9,6 +9,7 @@ Give Claude native access to the Bags.fm ecosystem on Solana. Ask natural langua
 - *"Analyze my wallet [address]"*
 - *"Compare PEPE vs NYAN on Bags"*
 - *"Prepare a swap of 1 SOL to ASTEROID"*
+- *"What tokens launched in the last hour?"*
 
 ## Tools
 
@@ -20,6 +21,7 @@ Give Claude native access to the Bags.fm ecosystem on Solana. Ask natural langua
 | `get_wallet_portfolio` | Full token breakdown for any Solana wallet |
 | `get_recent_transactions` | Last N transactions for a wallet |
 | `prepare_swap` | Swap quote via Bags.fm trade API |
+| `get_recently_launched` | Most recently launched tokens, sorted by launch date |
 
 ## Prompts
 
@@ -31,17 +33,47 @@ Give Claude native access to the Bags.fm ecosystem on Solana. Ask natural langua
 
 ## Connect to Claude Desktop
 
-Add to your Claude Desktop config (`%APPDATA%\Claude\claude_desktop_config.json` on Windows):
+The server is **free and public** — no API key or auth token required.
+
+### Option A — mcp-remote (works with all versions of Claude Desktop)
+
+Requires Node.js installed. Add to `%APPDATA%\Claude\claude_desktop_config.json` (Windows) or `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac):
 
 ```json
 {
   "mcpServers": {
     "bags": {
-      "url": "https://bags-mcp.onrender.com/mcp",
-      "headers": {
-        "Authorization": "Bearer your_mcp_auth_token"
-      }
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://bags-mcp.onrender.com/mcp"]
     }
+  }
+}
+```
+
+`npx` will auto-download `mcp-remote` on first run — no manual install needed.
+
+### Option B — Direct URL (newer Claude Desktop only)
+
+```json
+{
+  "mcpServers": {
+    "bags": {
+      "url": "https://bags-mcp.onrender.com/mcp"
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving. If you see *"not valid MCP server configurations"*, use Option A instead.
+
+### Cursor
+
+Open **Cursor Settings → MCP** and add a new server, or paste into `~/.cursor/mcp.json`:
+
+```json
+{
+  "bags": {
+    "url": "https://bags-mcp.onrender.com/mcp"
   }
 }
 ```
@@ -52,18 +84,18 @@ Add to your Claude Desktop config (`%APPDATA%\Claude\claude_desktop_config.json`
 git clone https://github.com/Dami904/Bags-MCP
 cd bags-mcp-server
 npm install
-cp .env.example .env   # fill in BAGS_API_KEY
+cp .env.example .env
 npm run build
 node dist/index.js
 ```
 
 ## Stack
 
-TypeScript · MCP SDK · Bags SDK (`@bagsfm/bags-sdk`) · Solana web3.js · Render
+TypeScript · MCP SDK · Bags.fm API · Solana web3.js · Render · Upstash Redis
 
-## Bags Token
+## Dashboard
 
-$BMCP — *[contract address]*
+Live usage stats and market data at [bags-mcp.onrender.com/dashboard](https://bags-mcp.onrender.com/dashboard)
 
 ---
 

@@ -162,8 +162,11 @@
     .connect-copy h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 12px; }
     .connect-copy h2 em { font-style: normal; color: var(--accent); }
     .connect-copy p { font-size: 14.5px; color: var(--text2); line-height: 1.7; margin-bottom: 20px; }
-    .platform-list { display: flex; flex-direction: column; gap: 10px; }
+    .platform-list { display: flex; flex-direction: column; gap: 8px; }
     .platform-item { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text2); }
+    .platform-btn { background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; cursor: pointer; text-align: left; transition: all 0.15s; width: 100%; }
+    .platform-btn:hover { background: var(--accent-bg); border-color: var(--accent-border); color: var(--text); }
+    .active-platform { background: var(--accent-bg) !important; border-color: var(--accent-border) !important; color: var(--text) !important; font-weight: 600; }
     .platform-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
     .pi-claude { background: #fef3c7; }
     .pi-cursor { background: #dbeafe; }
@@ -403,57 +406,95 @@
     <div class="connect-inner">
       <div class="connect-copy">
         <h2>One config.<br><em>Instant</em> access.</h2>
-        <p>Add this to your Claude Desktop config file and restart. Your MCP server appears immediately in every new conversation.</p>
+        <p>Free and public — no token or signup required. Pick your platform and paste the config.</p>
         <div class="platform-list">
-          <div class="platform-item"><div class="platform-icon pi-claude">🤖</div>Claude Desktop (Mac / Windows)</div>
-          <div class="platform-item"><div class="platform-icon pi-cursor">✦</div>Cursor IDE</div>
-          <div class="platform-item"><div class="platform-icon pi-web">🌐</div>Web chat — no config needed</div>
+          <button class="platform-item platform-btn active-platform" id="plt-claude" onclick="switchPlatform('claude')">
+            <div class="platform-icon pi-claude">🤖</div>Claude Desktop (Mac / Windows)
+          </button>
+          <button class="platform-item platform-btn" id="plt-cursor" onclick="switchPlatform('cursor')">
+            <div class="platform-icon pi-cursor">✦</div>Cursor IDE
+          </button>
+          <button class="platform-item platform-btn" id="plt-web" onclick="switchPlatform('web')">
+            <div class="platform-icon pi-web">🌐</div>Web chat — no config needed
+          </button>
+          <button class="platform-item platform-btn" id="plt-local" onclick="switchPlatform('local')">
+            <div class="platform-icon pi-dev" style="background:#fef3c7">💻</div>Local / Dev (stdio)
+          </button>
         </div>
       </div>
       <div class="config-card">
         <div class="config-tabs">
-          <button class="c-tab active" onclick="switchTab('cloud',this)">☁ Cloud</button>
-          <button class="c-tab" onclick="switchTab('local',this)">💻 Local(WSL)</button>
+          <button class="c-tab active" id="tab-btn-claude" onclick="switchPlatform('claude')">🤖 Claude Desktop</button>
+          <button class="c-tab" id="tab-btn-cursor" onclick="switchPlatform('cursor')">✦ Cursor</button>
+          <button class="c-tab" id="tab-btn-web" onclick="switchPlatform('web')">🌐 Web</button>
+          <button class="c-tab" id="tab-btn-local" onclick="switchPlatform('local')">💻 Local</button>
         </div>
         <div class="config-body">
-          <div id="tab-cloud">
-            <pre><code id="cloud-snippet">{
+
+          <!-- Claude Desktop -->
+          <div id="tab-claude">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6">
+              Works with <strong style="color:var(--text2)">all versions</strong> of Claude Desktop. Requires Node.js installed.
+            </div>
+            <pre><code id="claude-snippet">{
   "mcpServers": {
     "bags": {
-      "url": "https://bags-mcp.onrender.com/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_MCP_AUTH_TOKEN"
-      }
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://bags-mcp.onrender.com/mcp"]
     }
   }
 }</code></pre>
             <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6">
-              Works on <strong style="color:var(--text2)">Mac, Windows, Linux</strong> — no install needed.<br>
-              Replace <code style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">YOUR_MCP_AUTH_TOKEN</code> with the token from your server admin.
+              <code style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">npx</code> downloads <code style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">mcp-remote</code> automatically on first run — nothing to install manually.
             </div>
           </div>
+
+          <!-- Cursor -->
+          <div id="tab-cursor" style="display:none">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6">
+              Open <strong style="color:var(--text2)">Cursor Settings → MCP</strong> and add a new server, or paste into <code style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">~/.cursor/mcp.json</code>.
+            </div>
+            <pre><code id="cursor-snippet">{
+  "bags": {
+    "url": "https://bags-mcp.onrender.com/mcp"
+  }
+}</code></pre>
+            <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6">
+              No token required. Restart Cursor after saving.
+            </div>
+          </div>
+
+          <!-- Web chat -->
+          <div id="tab-web" style="display:none">
+            <div style="padding:24px 8px;text-align:center">
+              <div style="font-size:32px;margin-bottom:12px">🌐</div>
+              <div style="font-size:15px;font-weight:700;margin-bottom:8px;color:var(--text)">No config needed</div>
+              <div style="font-size:13.5px;color:var(--text2);margin-bottom:20px;line-height:1.6">Visit the chat page and start asking about Bags.fm tokens, wallets, and market data directly in your browser.</div>
+              <a href="/chat" class="btn-main" style="display:inline-flex">Open Web Chat →</a>
+            </div>
+          </div>
+
+          <!-- Local / Dev -->
           <div id="tab-local" style="display:none">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6">
+              Run the server locally via stdio. Clone the repo and build first.
+            </div>
             <pre><code id="local-snippet">{
   "mcpServers": {
     "bags": {
       "command": "node",
-      "args": ["/absolute/path/to/bags-mcp-server/dist/index.js"],
-      "env": {
-        "BAGS_API_KEY": "your_bags_api_key",
-        "ANTHROPIC_API_KEY": "your_anthropic_key",
-        "NODE_ENV": "production"
-      }
+      "args": ["/path/to/bags-mcp-server/dist/index.js"]
     }
   }
 }</code></pre>
             <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6">
-              Replace the path with where you cloned the repo. Run <code style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">npm run build</code> first.
+              Run <code style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">npm run build</code> after cloning. Replace path with your local clone location.
             </div>
           </div>
-          <div class="copy-row">
-            <button class="copy-btn" onclick="copyConfig(this)" id="copy-btn-main">Copy config</button>
-            <span class="config-hint" id="tab-cloud-hint">Config file: <code id="config-path-hint">detecting OS…</code></span>
-            <span class="config-hint" id="tab-local-hint" style="display:none">Config file: <code id="config-path-local">detecting OS…</code></span>
+
+          <div class="copy-row" id="copy-row">
+            <button class="copy-btn" onclick="copyConfig(this)">Copy config</button>
+            <span class="config-hint"><code id="config-path-hint">detecting OS…</code></span>
           </div>
         </div>
       </div>
@@ -572,37 +613,57 @@
     if (el) el.textContent = '✓ get_trending_tokens — live Bags.fm data';
   });
 
-  // ── OS detection → config file path ──────────────────────
-  (function() {
+  // ── OS detection → config file path hint ─────────────────
+  const configPaths = (function() {
     const ua = navigator.userAgent;
-    let configPath;
-    if (/Windows/i.test(ua)) {
-      configPath = '%APPDATA%\\Claude\\claude_desktop_config.json';
-    } else if (/Mac/i.test(ua)) {
-      configPath = '~/Library/Application Support/Claude/claude_desktop_config.json';
-    } else {
-      configPath = '~/.config/Claude/claude_desktop_config.json';
-    }
-    const h1 = document.getElementById('config-path-hint');
-    const h2 = document.getElementById('config-path-local');
-    if (h1) h1.textContent = configPath;
-    if (h2) h2.textContent = configPath;
+    const isWin = /Windows/i.test(ua), isMac = /Mac/i.test(ua);
+    return {
+      claude: isWin ? '%APPDATA%\\Claude\\claude_desktop_config.json'
+              : isMac ? '~/Library/Application Support/Claude/claude_desktop_config.json'
+              : '~/.config/Claude/claude_desktop_config.json',
+      cursor: isWin ? '%APPDATA%\\Cursor\\User\\globalStorage\\cursor.mcp\\mcp.json'
+              : isMac ? '~/.cursor/mcp.json'
+              : '~/.cursor/mcp.json',
+      local:  isWin ? '%APPDATA%\\Claude\\claude_desktop_config.json'
+              : isMac ? '~/Library/Application Support/Claude/claude_desktop_config.json'
+              : '~/.config/Claude/claude_desktop_config.json',
+    };
   })();
 
-  // ── Config tabs ───────────────────────────────────────────
-  let activeTab = 'cloud';
-  function switchTab(name, el) {
-    activeTab = name;
-    document.getElementById('tab-cloud').style.display = name==='cloud' ? '' : 'none';
-    document.getElementById('tab-local').style.display = name==='local' ? '' : 'none';
-    document.getElementById('tab-cloud-hint').style.display = name==='cloud' ? '' : 'none';
-    document.getElementById('tab-local-hint').style.display = name==='local' ? '' : 'none';
-    document.querySelectorAll('.c-tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
+  // Update hint whenever platform switches
+  const _origSwitchPlatform = switchPlatform;
+  switchPlatform = function(name) {
+    _origSwitchPlatform(name);
+    const hint = document.getElementById('config-path-hint');
+    if (hint) hint.textContent = configPaths[name] || '';
+  };
+  // Set initial hint
+  const _initHint = document.getElementById('config-path-hint');
+  if (_initHint) _initHint.textContent = configPaths.claude;
+
+  // ── Platform tabs ─────────────────────────────────────────
+  const platforms = ['claude', 'cursor', 'web', 'local'];
+  const snippetIds = { claude: 'claude-snippet', cursor: 'cursor-snippet', web: null, local: 'local-snippet' };
+  let activePlatform = 'claude';
+
+  function switchPlatform(name) {
+    activePlatform = name;
+    platforms.forEach(p => {
+      document.getElementById('tab-' + p).style.display = p === name ? '' : 'none';
+      const btn = document.getElementById('tab-btn-' + p);
+      if (btn) btn.classList.toggle('active', p === name);
+      const plt = document.getElementById('plt-' + p);
+      if (plt) plt.classList.toggle('active-platform', p === name);
+    });
+    // Hide copy button for web tab (no config to copy)
+    const copyRow = document.getElementById('copy-row');
+    if (copyRow) copyRow.style.display = name === 'web' ? 'none' : '';
   }
+
   function copyConfig(btn) {
-    const id = activeTab === 'cloud' ? 'cloud-snippet' : 'local-snippet';
-    navigator.clipboard.writeText(document.getElementById(id).textContent);
+    const snippetId = snippetIds[activePlatform];
+    if (!snippetId) return;
+    navigator.clipboard.writeText(document.getElementById(snippetId).textContent);
     const orig = btn.textContent;
     btn.textContent = '✓ Copied!';
     setTimeout(() => btn.textContent = orig, 1800);
