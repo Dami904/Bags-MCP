@@ -10,6 +10,9 @@ import { geminiStream } from "./gemini.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// Create the MCP server once and reuse it across all requests
+const mcpServerPromise = createServer();
+
 export function createApp() {
   const app = express();
   app.use(express.json());
@@ -28,20 +31,18 @@ export function createApp() {
     next();
   });
 
-  // ── MCP endpoint (GET + POST + DELETE required by Streamable HTTP spec) ────
-  const mcpHandler = async (req: Request, res: Response) => {
+  // ── MCP endpoint — all methods required by Streamable HTTP spec ────────────
+  app.all("/mcp", async (req: Request, res: Response) => {
     try {
-      const mcpServer = await createServer();
+      const mcpServer = await mcpServerPromise;
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
       await mcpServer.connect(transport);
       await transport.handleRequest(req, res, req.body);
+      res.on("close", () => transport.close());
     } catch (err) {
       if (!res.headersSent) res.status(500).json({ error: "Internal server error" });
     }
-  };
-  app.get("/mcp", mcpHandler);
-  app.post("/mcp", mcpHandler);
-  app.delete("/mcp", mcpHandler);
+  });
 
   // ── Chat (SSE streaming — supports Claude and Gemini) ─────────────────────
   app.post("/api/chat", async (req: Request, res: Response) => {
@@ -51,7 +52,6 @@ export function createApp() {
       return;
     }
 
-    // Resolve API key: user-provided key takes priority, then server env var
     const resolvedClaudeKey = model === "claude" ? (apiKey || process.env.ANTHROPIC_API_KEY) : null;
     const resolvedGeminiKey = model === "gemini" ? (apiKey || process.env.GEMINI_API_KEY) : null;
 
@@ -64,7 +64,6 @@ export function createApp() {
       return;
     }
 
-    // Record every chat request (fire-and-forget, don't block the stream)
     recordToolCall("chat_request", model, "chat").catch(() => {});
 
     res.setHeader("Content-Type", "text/event-stream");
