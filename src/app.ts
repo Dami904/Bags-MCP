@@ -10,9 +10,6 @@ import { geminiStream } from "./gemini.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Create the MCP server once and reuse it across all requests
-const mcpServerPromise = createServer();
-
 export function createApp() {
   const app = express();
   app.use(express.json());
@@ -34,7 +31,7 @@ export function createApp() {
   // ── MCP endpoint — all methods required by Streamable HTTP spec ────────────
   app.all("/mcp", async (req: Request, res: Response) => {
     try {
-      const mcpServer = await mcpServerPromise;
+      const mcpServer = await createServer();
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
       await mcpServer.connect(transport);
       await transport.handleRequest(req, res, req.body);
