@@ -28,8 +28,8 @@ export function createApp() {
     next();
   });
 
-  // ── MCP endpoint ───────────────────────────────────────────────────────────
-  app.post("/mcp", async (req: Request, res: Response) => {
+  // ── MCP endpoint (GET + POST + DELETE required by Streamable HTTP spec) ────
+  const mcpHandler = async (req: Request, res: Response) => {
     try {
       const mcpServer = await createServer();
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
@@ -38,7 +38,10 @@ export function createApp() {
     } catch (err) {
       if (!res.headersSent) res.status(500).json({ error: "Internal server error" });
     }
-  });
+  };
+  app.get("/mcp", mcpHandler);
+  app.post("/mcp", mcpHandler);
+  app.delete("/mcp", mcpHandler);
 
   // ── Chat (SSE streaming — supports Claude and Gemini) ─────────────────────
   app.post("/api/chat", async (req: Request, res: Response) => {
