@@ -433,10 +433,43 @@
 
           <!-- Claude Desktop -->
           <div id="tab-claude">
-            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6">
-              Works with <strong style="color:var(--text2)">all versions</strong> of Claude Desktop. Requires Node.js installed.
+
+            <!-- Method 1 -->
+            <div style="background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:8px;padding:12px 14px;margin-bottom:12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">1 — EASIEST</span>
+                <span style="font-size:12px;font-weight:600;color:var(--text)">Settings UI — no config editing</span>
+              </div>
+              <p style="font-size:12.5px;color:var(--text2);margin-bottom:8px">Claude Desktop → <strong>Settings → Connectors → Add custom connector</strong> → paste this URL:</p>
+              <div style="display:flex;align-items:center;gap:8px">
+                <code style="background:var(--pre-bg);color:var(--pre-text);padding:6px 10px;border-radius:6px;font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">https://bags-mcp.onrender.com/mcp</code>
+                <button class="copy-btn" style="flex-shrink:0;padding:5px 10px;font-size:11px" onclick="copyText('https://bags-mcp.onrender.com/mcp',this)">Copy URL</button>
+              </div>
             </div>
-            <pre><code id="claude-snippet">{
+
+            <!-- Method 2 -->
+            <div style="margin-bottom:10px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">2 — RECOMMENDED</span>
+                <span style="font-size:12px;font-weight:600;color:var(--text)">Config file — modern</span>
+              </div>
+              <pre style="margin-bottom:6px"><code id="claude-snippet">{
+  "mcpServers": {
+    "bags": {
+      "url": "https://bags-mcp.onrender.com/mcp"
+    }
+  }
+}</code></pre>
+              <button class="copy-btn" style="font-size:11px;padding:4px 10px" onclick="copyEl('claude-snippet',this)">Copy</button>
+            </div>
+
+            <!-- Method 3 -->
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--muted);border:1px solid var(--border);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">3 — LEGACY FALLBACK</span>
+                <span style="font-size:12px;color:var(--muted)">Config file — requires Node.js</span>
+              </div>
+              <pre style="margin-bottom:6px"><code id="claude-snippet-legacy">{
   "mcpServers": {
     "bags": {
       "command": "npx",
@@ -444,8 +477,8 @@
     }
   }
 }</code></pre>
-            <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6">
-              <code style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">npx</code> downloads <code style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">mcp-remote</code> automatically on first run — nothing to install manually.
+              <button class="copy-btn" style="font-size:11px;padding:4px 10px" onclick="copyEl('claude-snippet-legacy',this)">Copy</button>
+              <div style="margin-top:6px;font-size:11px;color:var(--muted)">Use this if Method 2 shows "not valid MCP server configurations".</div>
             </div>
           </div>
 
@@ -482,8 +515,7 @@
             <pre><code id="local-snippet">{
   "mcpServers": {
     "bags": {
-      "command": "node",
-      "args": ["/path/to/bags-mcp-server/dist/index.js"]
+      "url": "http://localhost:3000/mcp"
     }
   }
 }</code></pre>
@@ -668,6 +700,27 @@
     btn.textContent = '✓ Copied!';
     setTimeout(() => btn.textContent = orig, 1800);
   }
+  function copyEl(id, btn) {
+    navigator.clipboard.writeText(document.getElementById(id).textContent);
+    const orig = btn.textContent; btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = orig, 1800);
+  }
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text);
+    const orig = btn.textContent; btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = orig, 1800);
+  }
+
+  // Hide bottom copy-row for claude tab (each method has its own button)
+  const _sp = switchPlatform;
+  switchPlatform = function(name) {
+    _sp(name);
+    const cr = document.getElementById('copy-row');
+    if (cr) cr.style.display = name === 'web' || name === 'claude' ? 'none' : '';
+  };
+  // Init: hide for default claude tab
+  const _cr = document.getElementById('copy-row');
+  if (_cr) _cr.style.display = 'none';
 </script>
 </body>
 </html>

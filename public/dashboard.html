@@ -153,21 +153,34 @@
 
   <div class="connect-box">
     <h3>Connect to Claude Desktop — Free &amp; Public</h3>
-    <p style="margin-bottom:1rem">No token required. Add to your Claude Desktop config and restart.</p>
+    <p style="margin-bottom:1rem;font-size:0.85rem;color:var(--muted)">No token or signup required. Three ways to connect:</p>
 
+    <!-- Method 1 -->
+    <div style="background:var(--accent,#10b981)18;border:1px solid var(--accent,#10b981)44;border-radius:8px;padding:12px 14px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="background:var(--accent,#10b981);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">1 — EASIEST</span>
+        <span style="font-size:0.82rem;font-weight:600">Settings UI — no config editing</span>
+      </div>
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">Claude Desktop → <strong style="color:var(--text)">Settings → Connectors → Add custom connector</strong> → paste this URL:</p>
+      <div style="display:flex;align-items:center;gap:8px">
+        <code style="background:#0d1117;color:#c9d1d9;padding:6px 10px;border-radius:6px;font-size:0.75rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">https://bags-mcp.onrender.com/mcp</code>
+        <button class="copy-btn" style="flex-shrink:0;font-size:0.72rem;padding:4px 10px" onclick="(function(btn){navigator.clipboard.writeText('https://bags-mcp.onrender.com/mcp');var o=btn.textContent;btn.textContent='✓ Copied!';setTimeout(()=>btn.textContent=o,1500)})(this)">Copy URL</button>
+      </div>
+    </div>
+
+    <!-- Methods 2 & 3 via tabs -->
     <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
-      <button class="copy-btn" id="tab-a" onclick="switchTab('a')" style="opacity:1">Option A — mcp-remote</button>
-      <button class="copy-btn" id="tab-b" onclick="switchTab('b')" style="opacity:0.45;background:var(--surface2);color:var(--text2)">Option B — Direct URL</button>
+      <button class="copy-btn" id="tab-a" onclick="switchTab('a')" style="opacity:1">2 — Config file (modern)</button>
+      <button class="copy-btn" id="tab-b" onclick="switchTab('b')" style="opacity:0.45;background:var(--surface2);color:var(--text2)">3 — Config file (legacy)</button>
     </div>
 
     <div id="tab-a-content">
-      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem">Works with all versions of Claude Desktop. Requires Node.js (already installed if you use Claude Code).</p>
-      <p style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem">Config file: <code>%APPDATA%\Claude\claude_desktop_config.json</code> &nbsp;·&nbsp; Mac: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem">Paste into your config file and restart Claude Desktop.</p>
+      <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem">Windows: <code>%APPDATA%\Claude\claude_desktop_config.json</code> &nbsp;·&nbsp; Mac: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
       <pre id="config-snippet-a">{
   "mcpServers": {
     "bags": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "https://bags-mcp.onrender.com/mcp"]
+      "url": "https://bags-mcp.onrender.com/mcp"
     }
   }
 }</pre>
@@ -175,19 +188,30 @@
     </div>
 
     <div id="tab-b-content" style="display:none">
-      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem">Works on newer versions of Claude Desktop. If you see <em>"not valid MCP server configurations"</em>, use Option A instead.</p>
-      <p style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem">Config file: <code>%APPDATA%\Claude\claude_desktop_config.json</code> &nbsp;·&nbsp; Mac: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem">Use this if Method 2 shows <em>"not valid MCP server configurations"</em>. Requires Node.js.</p>
+      <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem">Windows: <code>%APPDATA%\Claude\claude_desktop_config.json</code> &nbsp;·&nbsp; Mac: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
       <pre id="config-snippet-b">{
   "mcpServers": {
     "bags": {
-      "url": "https://bags-mcp.onrender.com/mcp"
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://bags-mcp.onrender.com/mcp"]
     }
   }
 }</pre>
       <button class="copy-btn" onclick="copySnippet('b')">Copy config</button>
     </div>
 
-    <p style="font-size:0.78rem;color:var(--muted);margin-top:0.75rem"><strong>Cursor:</strong> Settings → MCP → add server with URL <code>https://bags-mcp.onrender.com/mcp</code></p>
+    <!-- Cursor -->
+    <div style="border-top:1px solid var(--border);margin-top:1rem;padding-top:1rem">
+      <p style="font-size:0.82rem;font-weight:700;margin-bottom:0.5rem">Cursor IDE</p>
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem"><strong style="color:var(--text)">Settings → MCP → Add server</strong>, or paste into <code>~/.cursor/mcp.json</code>:</p>
+      <pre id="config-snippet-cursor">{
+  "bags": {
+    "url": "https://bags-mcp.onrender.com/mcp"
+  }
+}</pre>
+      <button class="copy-btn" onclick="copySnippet('cursor')" style="margin-top:0.5rem">Copy config</button>
+    </div>
   </div>
 </div>
 

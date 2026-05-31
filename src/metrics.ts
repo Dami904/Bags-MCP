@@ -1,10 +1,3 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const METRICS_FILE = join(__dirname, "../metrics.json");
-
 export interface Metrics {
   totalCalls: number;
   toolCounts: Record<string, number>;
@@ -57,34 +50,11 @@ function hgetallToRecord(arr: unknown): Record<string, number> {
   return rec;
 }
 
-// ── Local file fallback ────────────────────────────────────────────────────
-function fileSave(m: Metrics): void {
-  try { writeFileSync(METRICS_FILE, JSON.stringify(m, null, 2)); } catch {}
-}
-
-function fileLoad(): Metrics {
-  if (existsSync(METRICS_FILE)) {
-    try {
-      const d = JSON.parse(readFileSync(METRICS_FILE, "utf-8"));
-      return {
-        totalCalls:  d.totalCalls  ?? 0,
-        toolCounts:  d.toolCounts  ?? {},
-        modelCounts: d.modelCounts ?? {},
-        recentCalls: d.recentCalls ?? [],
-        startedAt:   d.startedAt   ?? new Date().toISOString(),
-      };
-    } catch {}
-  }
-  return { totalCalls: 0, toolCounts: {}, modelCounts: {}, recentCalls: [], startedAt: new Date().toISOString() };
-}
-
-// ── Startup: hydrate from Redis before accepting any writes ────────────────
+// ── Startup: hydrate from Redis before accepting any reads or writes ────────
 let readyResolve!: () => void;
 const readyPromise = new Promise<void>(res => { readyResolve = res; });
 
 (async () => {
-  state = fileLoad();
-
   if (UPSTASH_URL && UPSTASH_TOKEN) {
     const [total, tools, models, recent, startedAt] = await pipeline([
       ["GET",     K.total],
@@ -117,20 +87,16 @@ export async function recordToolCall(
   model = "unknown",
   type: "tool" | "chat" = "tool",
 ): Promise<void> {
-  // Wait for Redis hydration so we never overwrite real data with stale in-memory state
   await readyPromise;
 
   const entry = { tool: toolName, model, timestamp: new Date().toISOString(), type };
 
-  // Update in-memory immediately
   state.totalCalls++;
   state.toolCounts[toolName]  = (state.toolCounts[toolName]  ?? 0) + 1;
   state.modelCounts[model]    = (state.modelCounts[model]    ?? 0) + 1;
   state.recentCalls.unshift(entry);
   if (state.recentCalls.length > 100) state.recentCalls = state.recentCalls.slice(0, 100);
-  fileSave(state);
 
-  // Atomic Redis increments — numbers can only go up, never get overwritten
   if (UPSTASH_URL && UPSTASH_TOKEN) {
     await pipeline([
       ["INCR",    K.total],
@@ -142,6 +108,7 @@ export async function recordToolCall(
   }
 }
 
-export function getMetrics(): Metrics {
+export async function getMetrics(): Promise<Metrics> {
+  await readyPromise;
   return { ...state, recentCalls: [...state.recentCalls] };
 }

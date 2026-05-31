@@ -82,8 +82,8 @@ export function createApp() {
   });
 
   // ── Public API ─────────────────────────────────────────────────────────────
-  app.get("/api/metrics", (_: Request, res: Response) => {
-    res.json(getMetrics());
+  app.get("/api/metrics", async (_: Request, res: Response) => {
+    res.json(await getMetrics());
   });
 
   app.get("/api/trending", async (_: Request, res: Response) => {
