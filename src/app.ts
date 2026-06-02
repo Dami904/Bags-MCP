@@ -5,8 +5,9 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { createServer } from "./server.js";
 import { getMetrics, recordToolCall } from "./metrics.js";
 import { getTopTokens } from "./api/bags.js";
-import { chatStream } from "./chat.js";
+import { chatStream, type StreamEvent } from "./chat.js";
 import { geminiStream } from "./gemini.js";
+import { humanizeError, isProviderUnavailable } from "./errors.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -41,27 +42,18 @@ export function createApp() {
     }
   });
 
-  // ── Chat (SSE streaming — supports Claude and Gemini) ─────────────────────
+  // ── Chat (SSE streaming — Claude with graceful Gemini fallback) ───────────
   app.post("/api/chat", async (req: Request, res: Response) => {
-    const { message, history = [], model = "claude", apiKey } = req.body;
+    const { message, history = [], model = "gemini", apiKey } = req.body;
     if (!message || typeof message !== "string") {
-      res.status(400).json({ error: "message is required" });
+      res.status(400).json({ error: "Please type a message first." });
       return;
     }
 
-    const resolvedClaudeKey = model === "claude" ? (apiKey || process.env.ANTHROPIC_API_KEY) : null;
-    const resolvedGeminiKey = model === "gemini" ? (apiKey || process.env.GEMINI_API_KEY) : null;
-
-    if (model === "claude" && !resolvedClaudeKey) {
-      res.status(503).json({ error: "No Anthropic API key. Provide your own key in Settings or ask the admin to configure one." });
-      return;
-    }
-    if (model === "gemini" && !resolvedGeminiKey) {
-      res.status(503).json({ error: "No Gemini API key. Provide your own key in Settings." });
-      return;
-    }
-
-    recordToolCall("chat_request", model, "chat").catch(() => {});
+    // Per-model keys. A user-supplied key only applies to the model they picked;
+    // Gemini fallback always uses the server's own key.
+    const claudeKey = model === "claude" ? (apiKey || process.env.ANTHROPIC_API_KEY) : process.env.ANTHROPIC_API_KEY;
+    const geminiKey = model === "gemini" ? (apiKey || process.env.GEMINI_API_KEY) : process.env.GEMINI_API_KEY;
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
@@ -69,14 +61,57 @@ export function createApp() {
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
 
+    const send = (event: StreamEvent) => res.write(`data: ${JSON.stringify(event)}\n\n`);
+
+    // Track whether anything user-visible was streamed, so we only fall back
+    // when the answer hasn't started yet (avoids duplicate/partial output).
+    let streamed = false;
+    const track = (event: StreamEvent) => {
+      if (event.type === "text" || event.type === "tool_start") streamed = true;
+      send(event);
+    };
+
+    const runGemini = async (notice?: string): Promise<void> => {
+      if (!geminiKey) {
+        send({ type: "error", message: "Gemini isn't set up on this server yet. Add your own Gemini key in Settings to start chatting." });
+        return;
+      }
+      if (notice) send({ type: "notice", message: notice, model: "gemini" });
+      recordToolCall("chat_request", "gemini", "chat").catch(() => {});
+      await geminiStream(message, history, track, geminiKey);
+    };
+
     try {
       if (model === "gemini") {
-        await geminiStream(message, history, (event) => res.write(`data: ${JSON.stringify(event)}\n\n`), resolvedGeminiKey!);
+        if (!geminiKey) {
+          send({ type: "error", message: "Gemini isn't set up on this server yet. Add your own Gemini key in Settings to start chatting." });
+        } else {
+          recordToolCall("chat_request", "gemini", "chat").catch(() => {});
+          await geminiStream(message, history, track, geminiKey);
+        }
       } else {
-        await chatStream(message, history, (event) => res.write(`data: ${JSON.stringify(event)}\n\n`), resolvedClaudeKey!);
+        // Claude selected.
+        if (!claudeKey) {
+          // No Claude key configured → gracefully answer with Gemini.
+          await runGemini("Claude isn't set up on this server, so I answered with Gemini instead. You can add your own Claude key in Settings.");
+        } else {
+          recordToolCall("chat_request", "claude", "chat").catch(() => {});
+          try {
+            await chatStream(message, history, track, claudeKey);
+          } catch (err) {
+            // Claude failed (out of credits, rate-limited, bad key, outage…).
+            // If nothing was shown yet and Gemini is available, fall back to it.
+            if (!streamed && geminiKey && isProviderUnavailable(err)) {
+              await runGemini("Claude is unavailable right now, so I answered with Gemini instead.");
+            } else {
+              send({ type: "error", message: humanizeError(err, "claude") });
+            }
+          }
+        }
       }
     } catch (err) {
-      res.write(`data: ${JSON.stringify({ type: "error", message: err instanceof Error ? err.message : "Chat error" })}\n\n`);
+      // A Gemini failure (primary or fallback) lands here.
+      if (!streamed) send({ type: "error", message: humanizeError(err, "gemini") });
     }
     res.end();
   });

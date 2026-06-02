@@ -145,6 +145,12 @@
     .spin { display: inline-block; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Friendly inline banners for fallback notices & errors */
+    .chat-notice { display: flex; align-items: flex-start; gap: 8px; background: rgba(66,133,244,0.08); border: 1px solid rgba(66,133,244,0.3); color: var(--text2); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; line-height: 1.5; margin-bottom: 10px; }
+    .chat-notice::before { content: "ℹ️"; flex-shrink: 0; }
+    .chat-error { display: flex; align-items: flex-start; gap: 8px; background: rgba(248,81,73,0.08); border: 1px solid rgba(248,81,73,0.3); color: var(--text); border-radius: 8px; padding: 10px 13px; font-size: 13px; line-height: 1.55; }
+    .chat-error::before { content: "⚠️"; flex-shrink: 0; }
+
     /* Cursor blink */
     .cursor { display: inline-block; width: 2px; height: 14px; background: var(--accent2); margin-left: 1px; border-radius: 1px; animation: blink 1s step-end infinite; vertical-align: middle; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
@@ -659,9 +665,9 @@
     row.innerHTML = `
       <div class="msg-inner">
         <div class="msg-header">
-          <div class="msg-avatar bot" style="background:linear-gradient(135deg,${modelColor}99,${modelColor})">B</div>
+          <div class="msg-avatar bot row-avatar" style="background:linear-gradient(135deg,${modelColor}99,${modelColor})">B</div>
           <div class="msg-name">BagsMCP</div>
-          <span style="display:inline-flex;align-items:center;gap:4px;background:${modelColor}18;border:1px solid ${modelColor}40;border-radius:100px;padding:1px 8px;font-size:10.5px;font-weight:600;color:${modelColor}">
+          <span class="row-model-badge" style="display:inline-flex;align-items:center;gap:4px;background:${modelColor}18;border:1px solid ${modelColor}40;border-radius:100px;padding:1px 8px;font-size:10.5px;font-weight:600;color:${modelColor}">
             <span style="width:5px;height:5px;border-radius:50%;background:${modelColor};display:inline-block"></span>
             ${modelLabel}
           </span>
@@ -707,6 +713,22 @@
     return pill;
   }
 
+  // Re-label a bot row's model badge/avatar (used when Claude falls back to Gemini)
+  function setRowModel(row, model) {
+    const isGemini = model === 'gemini';
+    const color = isGemini ? '#4285f4' : '#f59e0b';
+    const label = isGemini ? 'Gemini 3.1 Flash Lite' : 'Claude Sonnet';
+    const badge = row.querySelector('.row-model-badge');
+    if (badge) {
+      badge.style.background = color + '18';
+      badge.style.borderColor = color + '40';
+      badge.style.color = color;
+      badge.innerHTML = `<span style="width:5px;height:5px;border-radius:50%;background:${color};display:inline-block"></span> ${label}`;
+    }
+    const avatar = row.querySelector('.row-avatar');
+    if (avatar) avatar.style.background = `linear-gradient(135deg,${color}99,${color})`;
+  }
+
   function scroll() { messagesEl.scrollTop = messagesEl.scrollHeight; }
 
   const TOOL_NAMES = {
@@ -742,8 +764,9 @@
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Server error' }));
-        contentEl.innerHTML = `<span style="color:var(--red)">Error: ${err.error}</span>`;
+        const err = await res.json().catch(() => ({ error: 'Something went wrong on the server. Please try again.' }));
+        cursor.remove();
+        contentEl.innerHTML = `<div class="chat-error">${err.error}</div>`;
         return;
       }
 
@@ -778,6 +801,16 @@
             contentEl.innerHTML = renderMarkdown(rawText);
             contentEl.appendChild(cursor);
             scroll();
+          } else if (event.type === 'notice') {
+            // Friendly info banner (e.g. Claude → Gemini fallback). Not an error.
+            if (event.model) { setRowModel(row, event.model); switchModel(event.model); }
+            if (!row.querySelector('.chat-notice')) {
+              const note = document.createElement('div');
+              note.className = 'chat-notice';
+              note.textContent = event.message;
+              contentEl.parentElement.insertBefore(note, contentEl);
+            }
+            scroll();
           } else if (event.type === 'done') {
             history = event.history;
             cursor.remove();
@@ -786,13 +819,13 @@
             saveConversation();
           } else if (event.type === 'error') {
             cursor.remove();
-            contentEl.innerHTML = `<span style="color:var(--red)">Error: ${event.message}</span>`;
+            contentEl.innerHTML = `<div class="chat-error">${event.message}</div>`;
           }
         }
       }
     } catch (e) {
       cursor.remove();
-      contentEl.innerHTML = `<span style="color:var(--red)">Connection error — is the server running?</span>`;
+      contentEl.innerHTML = `<div class="chat-error">Couldn't reach the server — please check your connection and try again.</div>`;
     }
 
     isLoading = false;

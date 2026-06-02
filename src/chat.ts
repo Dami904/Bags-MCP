@@ -187,6 +187,7 @@ export type StreamEvent =
   | { type: "tool_done"; tool: string }
   | { type: "text"; text: string }
   | { type: "done"; history: ChatMessage[] }
+  | { type: "notice"; message: string; model?: string }
   | { type: "error"; message: string };
 
 export async function chatStream(
