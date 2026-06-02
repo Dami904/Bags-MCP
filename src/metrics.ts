@@ -6,8 +6,9 @@ export interface Metrics {
   startedAt: string;
 }
 
-const UPSTASH_URL = process.env.UPSTASH_REDIS_URL;
-const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_TOKEN;
+// Accept both the Upstash default names (UPSTASH_REDIS_REST_*) and the older short names.
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL ?? process.env.UPSTASH_REDIS_URL;
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.UPSTASH_REDIS_TOKEN;
 
 const K = {
   total:     "bagsmcp:v2:total",
@@ -55,6 +56,11 @@ let readyResolve!: () => void;
 const readyPromise = new Promise<void>(res => { readyResolve = res; });
 
 (async () => {
+  console.log(
+    UPSTASH_URL && UPSTASH_TOKEN
+      ? "metrics: persistence ON (upstash) — counters survive restarts"
+      : "metrics: in-memory only — counters WILL reset on every restart (UPSTASH_REDIS_REST_URL / _TOKEN not set)",
+  );
   if (UPSTASH_URL && UPSTASH_TOKEN) {
     const [total, tools, models, recent, startedAt] = await pipeline([
       ["GET",     K.total],
