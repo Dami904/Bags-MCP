@@ -73,6 +73,17 @@
     .cta-btn { background: var(--accent); color: #fff; border: none; border-radius: 7px; padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.15s; }
     .cta-btn:hover { background: var(--accent2); color: #0d1117; }
 
+    /* ── MOBILE BOTTOM NAV ─────────────────────────────────── */
+    .mobile-nav { display: none; }
+    .mobile-nav a {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; text-decoration: none; color: var(--muted); font-size: 10.5px; font-weight: 600;
+      letter-spacing: 0.01em; transition: color 0.15s; padding: 6px 0;
+    }
+    .mobile-nav a svg { width: 21px; height: 21px; }
+    .mobile-nav a.active { color: var(--accent); }
+    .mobile-nav a:active { background: var(--accent-bg); }
+
     /* ── LAYOUT PRIMITIVES ─────────────────────────────────── */
     .container { max-width: 1000px; margin: 0 auto; padding: 0 40px; }
     .section-label { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
@@ -214,10 +225,9 @@
 
     /* ── RESPONSIVE ─────────────────────────────────────────── */
     @media(max-width:768px){
-      .topbar { padding: 0 12px; gap: 8px; }
-      .topbar-nav { gap: 0; }
-      .topbar-nav a { font-size: 12px; padding: 4px 7px; }
-      .topbar-name { display: none; }
+      .topbar { padding: 0 14px; gap: 8px; }
+      .topbar-name { display: inline; }
+      .topbar-nav { display: none; }            /* desktop section links → replaced by bottom nav */
       .cta-btn { display: none; }
       .container { padding: 0 16px; }
       .hero-inner { padding: 0 16px; }
@@ -227,12 +237,30 @@
       .stat-item { min-width: 50%; }
       footer { padding: 24px 16px; }
       .hero { padding: 48px 0 40px; }
+      .demo-section, .tools-section, .how-section, .connect-section, .token-section { padding: 48px 0; }
+      /* config tabs scroll horizontally instead of overflowing */
+      .config-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .config-tabs::-webkit-scrollbar { display: none; }
+      .c-tab { white-space: nowrap; flex-shrink: 0; }
+      /* demo chat table never overflows the card */
+      .win-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      /* show mobile bottom nav + clear space for it */
+      .mobile-nav {
+        display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 58px;
+        background: var(--surface); border-top: 1px solid var(--border); z-index: 150;
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.06); padding-bottom: env(safe-area-inset-bottom, 0);
+      }
+      body { padding-bottom: 58px; }
     }
     @media(max-width:480px){
       .tools-grid, .how-grid { grid-template-columns: 1fr; }
-      .hero h1 { font-size: 2.2rem; }
-      .topbar-nav a { font-size: 11px; padding: 4px 5px; }
+      .hero h1 { font-size: 2rem; }
+      .hero-sub { font-size: 15px; }
+      .hero-btns .btn-main, .hero-btns .btn-ghost { flex: 1; justify-content: center; }
       .theme-btn { padding: 4px 8px 4px 6px; font-size: 11px; }
+      .stat-val { font-size: 20px; }
+      .demo-copy h2, .connect-copy h2, .token-copy h2 { font-size: 24px; }
+      .tools-header h2 { font-size: 26px; }
     }
   </style>
 </head>
@@ -259,6 +287,22 @@
     </button>
     <a href="/chat" class="cta-btn">Try live →</a>
   </div>
+</nav>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav">
+  <a href="/" class="active">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8.354 1.146a.5.5 0 00-.708 0l-6 6A.5.5 0 002 7.5V14a.5.5 0 00.5.5h4a.5.5 0 00.5-.5v-3h2v3a.5.5 0 00.5.5h4a.5.5 0 00.5-.5V7.5a.5.5 0 00-.146-.354l-6-6z"/></svg>
+    Home
+  </a>
+  <a href="/dashboard">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 3.5A1.5 1.5 0 012.5 2h11A1.5 1.5 0 0115 3.5v1A1.5 1.5 0 0113.5 6h-11A1.5 1.5 0 011 4.5v-1zm0 6A1.5 1.5 0 012.5 8h4A1.5 1.5 0 018 9.5v4A1.5 1.5 0 016.5 15h-4A1.5 1.5 0 011 13.5v-4zm8 0A1.5 1.5 0 0110.5 8h3a1.5 1.5 0 011.5 1.5v4a1.5 1.5 0 01-1.5 1.5h-3A1.5 1.5 0 019 13.5v-4z"/></svg>
+    Dashboard
+  </a>
+  <a href="/chat">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    Chat
+  </a>
 </nav>
 
 <!-- HERO -->
