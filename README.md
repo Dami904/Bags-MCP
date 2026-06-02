@@ -2,6 +2,8 @@
 
 Give Claude native access to the Bags.fm ecosystem on Solana. Ask natural language questions and get live on-chain data back.
 
+🌐 **Website:** [bags-mcp.onrender.com](https://bags-mcp.onrender.com) · 📊 **Dashboard:** [bags-mcp.onrender.com/dashboard](https://bags-mcp.onrender.com/dashboard) · 🛠 **GitHub:** [Dami904/Bags-MCP](https://github.com/Dami904/Bags-MCP)
+
 ## What it does
 
 - *"What are the top trending tokens on Bags right now?"*
