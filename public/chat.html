@@ -310,8 +310,8 @@
     <div class="topbar-left">
       <div class="live-badge"><div class="pulse"></div>Live Bags.fm data</div>
       <div class="model-toggle-pill">
-        <button class="model-pill-btn claude active" id="pill-claude" onclick="switchModel('claude')">● Claude</button>
-        <button class="model-pill-btn gemini" id="pill-gemini" onclick="switchModel('gemini')">● Gemini</button>
+        <button class="model-pill-btn claude" id="pill-claude" onclick="switchModel('claude')">● Claude</button>
+        <button class="model-pill-btn gemini active" id="pill-gemini" onclick="switchModel('gemini')">● Gemini</button>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
@@ -392,14 +392,14 @@
     <div class="settings-section">
       <div class="settings-section-title">AI Model</div>
       <div class="model-toggle">
-        <button class="model-btn claude active" id="btn-claude" onclick="switchModel('claude')">
+        <button class="model-btn claude" id="btn-claude" onclick="switchModel('claude')">
           <span class="model-indicator claude-dot"></span> Claude
         </button>
-        <button class="model-btn gemini" id="btn-gemini" onclick="switchModel('gemini')">
+        <button class="model-btn gemini active" id="btn-gemini" onclick="switchModel('gemini')">
           <span class="model-indicator gemini-dot"></span> Gemini
         </button>
       </div>
-      <div class="model-active-label" id="model-active-label">Using <strong>Claude Sonnet 4.6</strong></div>
+      <div class="model-active-label" id="model-active-label">Using <strong>Gemini 1.5 Flash</strong></div>
     </div>
 
     <!-- Claude key -->
@@ -803,7 +803,7 @@
   inputEl.focus();
 
   // ── SETTINGS ───────────────────────────────────────────────────────────────
-  let currentModel = localStorage.getItem('bagsmcp-model') || 'claude';
+  let currentModel = localStorage.getItem('bagsmcp-model') || 'gemini';
 
   function openSettings() {
     document.getElementById('settings-overlay').classList.add('open');
